@@ -1,0 +1,145 @@
+# Node.js 依赖
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 覆盖率报告
+lib-cov
+coverage/
+*.lcov
+
+# nyc 测试覆盖率
+.nyc_output
+
+# 编译输出
+build/
+dist/
+out/
+
+# TypeScript 缓存
+*.tsbuildinfo
+
+# 可选的 npm 缓存目录
+.npm
+
+# 可选的 eslint 缓存
+.eslintcache
+
+# Microbundle 缓存
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# 可选的 REPL 历史
+.node_repl_history
+
+# 输出的 npm 包
+*.tgz
+
+# Yarn 完整性文件
+.yarn-integrity
+
+# dotenv 环境变量文件
+.env
+.env.test
+.env.production
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# parcel-bundler 缓存 (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js 构建输出
+.next
+
+# Nuxt.js 构建/生成输出
+.nuxt
+dist
+
+# Gatsby 文件
+.cache/
+public
+
+# Vite 构建工具
+.vite
+
+# Rollup.js 可选输出目录
+.rollup.cache/
+
+# Storybook 构建输出
+.out
+.storybook-out
+
+# 临时文件夹
+tmp/
+temp/
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 编辑器和IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统生成的文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows 系统文件
+desktop.ini
+
+# 日志文件
+*.log
+logs
+
+# 备份文件
+*.backup
+*.bak
+*-backup.ts
+*-backup.js
+
+# 测试生成的文件
+.jest/
+jest_*
+coverage/
+
+# 项目特定的临时文件
+*.tmp
+*.temp
+
+# 缓存目录
+.cache/
+.parcel-cache/
+.rollup.cache/
+
+# 打包文件
+*.tar.gz
+*.zip
+*.rar
+
+# 开发时的临时配置
+.env.development
+.env.staging 
