@@ -9,7 +9,7 @@
  * - 直线移动检测：Bresenham算法的路径遮挡判断
  * - 复杂地图场景：使用真实16x16地图的综合测试
  */
-import { GameMap, TileType } from '../src/gameMap';
+import { GameMap, TileType } from '../src/context/gameMap';
 import { MapLayout } from '../src/mapData';
 
 describe('游戏地图基础功能测试', () => {

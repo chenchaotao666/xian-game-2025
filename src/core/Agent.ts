@@ -8,9 +8,10 @@
  * @version 1.0.0
  */
 
-import { GameMap } from '../gameMap';
+import { GameMap } from '../context/gameMap';
 import { IAgent, IAgentState, Position, ActionContext } from './types';
 import { TeamBlackboard } from './TeamBlackboard';
+import { Hero } from '../models/heros';
 
 /**
  * 游戏代理实现类
@@ -22,9 +23,9 @@ import { TeamBlackboard } from './TeamBlackboard';
  * - 状态模拟（用于AI决策预测）
  */
 export class Agent implements IAgent {
-  id: string;
+  id: number;
   health: number;
-  mana: number;
+  hero: Hero;
   position: { x: number; y: number };
   teamId: string;
   teamBlackboard: TeamBlackboard;
@@ -45,12 +46,12 @@ export class Agent implements IAgent {
    * @param movementRange 移动范围
    */
   constructor(
-    id: string, health: number, mana: number, position: Position,
+    hero: Hero,
+    position: Position,
     teamId: string, teamBlackboard: TeamBlackboard, movementRange: number = 3,
   ) {
-    this.id = id;
-    this.health = health;
-    this.mana = mana;
+    this.id = hero.id;
+    this.health = hero.health;
     this.position = position;
     this.teamId = teamId;
     this.teamBlackboard = teamBlackboard;
@@ -215,7 +216,6 @@ export class Agent implements IAgent {
     return {
       id: this.id,
       health: this.health,
-      mana: this.mana,
       position: newPosition
     };
   }
@@ -256,7 +256,7 @@ export class Agent implements IAgent {
    * @param allAgents 所有代理列表
    * @param gameMap 游戏地图
    */
-  simulatePerception(allAgents: Agent[], gameMap: GameMap): void {
+  simulatePerception(allAgents: IAgent[], gameMap: GameMap): void {
     this.visibleEnemies = allAgents.filter(agent => 
       agent !== this && 
       agent.teamId !== this.teamId && 

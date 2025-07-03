@@ -8,8 +8,7 @@
  * @version 1.0.0
  */
 
-import { GameMap } from '../gameMap';
-import type { AggregationMethod } from '../aggregators';
+import { GameMap } from '../context/gameMap';
 
 /**
  * 全局目标类型枚举
@@ -79,9 +78,8 @@ export interface TeamBlackboard {
  */
 export interface IAgent {
   // === 基本属性 ===
-  id: string;                    // 唯一标识符
+  id: number;                    // 唯一标识符
   health: number;                // 当前生命值
-  mana: number;                  // 当前法力值
   position: Position;            // 当前位置坐标
   teamId: string;                // 所属队伍ID
   movementRange: number;         // 每回合最大移动范围/点数
@@ -116,7 +114,6 @@ export interface IAgent {
 
 /**
  * 行为上下文接口
- * 在为行为评分时传递给考量因素，包含执行行为所需的所有上下文信息
  */
 export interface ActionContext {
   agent: IAgent;                              // 执行行为的代理（或其模拟状态）
@@ -124,29 +121,5 @@ export interface ActionContext {
   potentialTarget?: IAgentState;              // 行为的潜在目标（或其模拟状态）
   skillId?: string;                           // 涉及的技能ID（如果适用）
   destination?: { x: number, y: number };    // 潜在的目的地 (用于移动行为)
-  // 可以根据需要添加其他上下文数据，例如当前回合数 (虽然通常从agent获取)
+  teamBlackboard: TeamBlackboard;            // 所属队伍的黑板，用于共享信息
 }
-
-/**
- * 考量因素 (Consideration) 接口
- * 用于评估特定行为在特定情况下的合适程度
- */
-export interface IConsideration {
-  readonly name: string;                      // 考量因素的名称，便于调试
-  score(context: ActionContext): number;     // 计算得分 (0-1之间)
-}
-
-/**
- * 效用行为 (Utility Action) 接口
- * 定义AI可以执行的行为，通过多个考量因素来计算执行优先级
- */
-export interface IUtilityAction {
-  readonly name: string;                      // 行为名称
-  considerations: IConsideration[];           // 考量因素列表
-  aggregationMethod: AggregationMethod;      // 分数聚合方法
-
-  calculateUtility(agent: IAgent, baseContext?: PartialExcept<ActionContext, 'gameMap'>, debug?: boolean): number; // 计算总效用分
-  canExecute(agent: IAgent, context?: ActionContext): boolean;           // 检查是否可执行
-  execute(realAgent: IAgent, context: ActionContext): void;              // 执行行为（注意：执行时使用真实的Agent对象）
-  generateContexts?(agent: IAgent, gameMap: GameMap): ActionContext[];   // 生成多个执行上下文（可选）
-} 

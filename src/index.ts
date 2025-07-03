@@ -118,13 +118,40 @@ export { AIController } from './controllers/AIController';
  */
 
 // 重新导出聚合器和地图相关模块
-export { GameMap } from './gameMap';
+export { GameMap } from './context/gameMap';
+
+// ==================== 行为树模块导出 ====================
+
+/**
+ * 行为树框架导出
+ * 
+ * 新的行为树实现，基于 Mistreevous 库
+ * 提供更直观、易维护的AI行为定义方式
+ * 
+ * 使用示例：
+ * ```typescript
+ * import { BehaviorTreeController, BehaviorTreeBuilder } from './bt';
+ * 
+ * const controller = new BehaviorTreeController(
+ *   agent,
+ *   gameMap,
+ *   allAgents,
+ *   BehaviorTreeBuilder.buildAggressiveAI(),
+ *   true // 开启调试
+ * );
+ * 
+ * controller.takeTurn();
+ * ```
+ */
+
+// 导出行为树核心组件
 export {
-  type AggregationMethod,
-  getAverageAggregate,
-  getProductAggregate,
-  getWeightedAverageAggregate,
-  getMinAggregate,
-  getMaxAggregate,
-  MIN_SCORE,
-} from './aggregators'; 
+  BehaviourTree,
+  State,
+  BehaviorTreeAgent,
+  BehaviorTreeController,
+  BehaviorTreeBuilder,
+} from './bt';
+
+// 导出行为树演示
+export { BehaviorTreeDemo } from './bt/demo';

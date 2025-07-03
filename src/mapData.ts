@@ -3,7 +3,7 @@
  * @author Xuan
  * @since 2025/5/22 下午 11:05
  */
-import { TileType } from './gameMap';
+import { TileType } from './context/gameMap';
 
 /**
  * 地图布局定义
