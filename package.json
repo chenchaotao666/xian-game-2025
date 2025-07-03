@@ -1,0 +1,35 @@
+{
+  "name": "xian-game-2025",
+  "version": "1.0.0",
+  "description": "三国策略对战游戏 - 基于行为树的AI实现",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ tests/ examples/",
+    "lint:fix": "eslint src/ tests/ examples/ --fix",
+    "example": "node examples/basic-game.js",
+    "start": "node examples/basic-game.js"
+  },
+  "dependencies": {
+    "mistreevous": "^4.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "babel-jest": "^29.0.0",
+    "eslint": "^8.42.0",
+    "jest": "^29.0.0"
+  },
+  "keywords": [
+    "三国",
+    "策略游戏", 
+    "行为树",
+    "AI",
+    "mistreevous"
+  ],
+  "author": "AI Assistant",
+  "license": "MIT"
+} 
