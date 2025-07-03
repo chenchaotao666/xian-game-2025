@@ -23,6 +23,7 @@
     "strict": true,                             // 启用严格模式
     "noImplicitAny": false,                     // 暂时允许隐式any以完成迁移
     "strictNullChecks": true,                   // 严格空值检查
+    "strictNullChecks": true,                   // 严格空值检查
     "strictFunctionTypes": true,                // 严格函数类型检查
     "noImplicitReturns": true,                  // 不允许隐式返回
     "noImplicitThis": true,                     // 不允许隐式this
@@ -64,4 +65,4 @@
       "target": "ES2022"
     }
   }
-} 
+}

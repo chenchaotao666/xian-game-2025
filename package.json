@@ -19,6 +19,9 @@
     "example:network": "ts-node --esm examples/network-example.ts",
     "clean": "rimraf dist"
   },
+  "dependencies": {
+    "mistreevous": "^4.2.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.22.0",
     "@babel/preset-env": "^7.22.0",
