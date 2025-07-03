@@ -149,8 +149,22 @@ async function main(): Promise<void> {
     }
 }
 
-// 启动程序
-main().catch((error) => {
-  console.error('程序启动失败:', error);
-  process.exit(1);
-});
+// 添加连接重试逻辑
+const maxRetries = 5;
+let retryCount = 0;
+
+const connectWithRetry = () => {
+  setTimeout(() => {
+    if (retryCount < maxRetries) {
+      retryCount++;
+      console.log(`重试连接 (${retryCount}/${maxRetries})`);
+      // 启动程序
+      main().catch((error) => {
+        console.error('程序启动失败:', error);
+        process.exit(1);
+      });
+    }
+  }, 2000); // 2秒后重试
+};
+
+connectWithRetry();
