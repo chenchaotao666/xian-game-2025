@@ -1,5 +1,5 @@
-import GameMap from './GameMap.js';
-import General from '../entities/General.js';
+import GameMap from './GameMap';
+import General from '../entities/General';
 import {
   GAME_RULES,
   ECONOMY,
@@ -10,7 +10,7 @@ import {
   FORMATIONS,
   BUFFS,
   calculateDistance
-} from './GameConstants.js';
+} from './GameConstants';
 
 /**
  * 游戏引擎类

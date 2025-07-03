@@ -3,10 +3,10 @@
  * 集成网络通信和AI决策系统，提供完整的对战客户端
  */
 
-const NetworkClient = require('../network/NetworkClient');
-const AIController = require('./AIController');
-const ActionBuilder = require('../network/ActionBuilder');
-const { FORMATION_TYPES, SOLDIER_TYPES } = require('../network/ProtocolManager');
+import NetworkClient from '../network/NetworkClient.js';
+import AIController from './AIController.js';
+import ActionBuilder from '../network/ActionBuilder.js';
+import { FORMATION_TYPES, SOLDIER_TYPES } from '../network/ProtocolManager.js';
 
 /**
  * 网络AI客户端主类
@@ -527,4 +527,4 @@ class NetworkAIClient {
     }
 }
 
-module.exports = NetworkAIClient; 
+export default NetworkAIClient; 

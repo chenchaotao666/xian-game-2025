@@ -1,12 +1,20 @@
-import GameEngine from './core/GameEngine.js';
-import AIController from './ai/AIController.js';
-import { PLAYERS } from './core/GameConstants.js';
+import GameEngine from './core/GameEngine';
+import AIController from './ai/AIController';
+import { PLAYERS } from './core/GameConstants';
 
 /**
  * 三国策略对战游戏主类
  * 集成游戏引擎和AI控制器，提供完整的游戏体验
  */
 export default class XianGame {
+    private config: any;
+    private gameEngine: any;
+    private aiControllers: any;
+    private isRunning: boolean = false;
+    private isPaused: boolean = false;
+    private gameResult: any = null;
+    private gameStats: any = {};
+
   constructor(config = {}) {
     // 游戏配置
     this.config = {

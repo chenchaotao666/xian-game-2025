@@ -4,7 +4,7 @@ import {
   BATTLE_STATES, 
   GAME_RULES,
   calculateDistance 
-} from '../core/GameConstants.js';
+} from '../core/GameConstants';
 
 /**
  * 武将类

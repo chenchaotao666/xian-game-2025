@@ -6,7 +6,7 @@ import {
   calculateDistance,
   TERRAIN_TYPES,
   CITIES
-} from '../core/GameConstants.js';
+} from '../core/GameConstants';
 
 /**
  * AI行为树类

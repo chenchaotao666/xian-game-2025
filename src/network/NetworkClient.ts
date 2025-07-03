@@ -3,16 +3,20 @@
  * 集成通信协议的所有功能，提供完整的网络通信接口
  */
 
-const { ProtocolManager } = require('./ProtocolManager');
-const MessageParser = require('./MessageParser');
-const ActionBuilder = require('./ActionBuilder');
-const { EventEmitter } = require('events');
+import ProtocolManager from './ProtocolManager';
+import MessageParser from './MessageParser';
+import ActionBuilder from './ActionBuilder';
+import { EventEmitter } from 'events';
 
 /**
  * 网络客户端主类
  * 封装所有网络通信相关功能
  */
 class NetworkClient extends EventEmitter {
+    private protocolManager: any;
+    private gameState: any;
+    private statistics: any;
+
     constructor() {
         super();
         
@@ -448,4 +452,4 @@ class NetworkClient extends EventEmitter {
     }
 }
 
-module.exports = NetworkClient; 
+export default NetworkClient; 

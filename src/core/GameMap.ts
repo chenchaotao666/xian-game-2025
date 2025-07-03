@@ -2,9 +2,9 @@ import {
   MAP_CONFIG, 
   TERRAIN_TYPES, 
   FLAG_ZONE, 
-  DIRECTIONS,
   calculateDistance 
 } from './GameConstants.js';
+import type { Position } from '../types/index.js';
 
 /**
  * 游戏地图管理类

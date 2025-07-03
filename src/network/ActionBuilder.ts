@@ -3,7 +3,7 @@
  * 提供构建各种游戏行动指令的工具方法
  */
 
-const { ACTION_TYPES, FORMATION_TYPES, SOLDIER_TYPES } = require('./ProtocolManager');
+import { ACTION_TYPES, FORMATION_TYPES, SOLDIER_TYPES } from './ProtocolManager';
 
 /**
  * 行动指令构建器类
@@ -410,4 +410,4 @@ class ActionBuilder {
     }
 }
 
-module.exports = ActionBuilder; 
+export default ActionBuilder; 

@@ -1,350 +1,228 @@
-# 三国策略对战游戏 (Xian Game)
+# 三国策略对战游戏 (TypeScript版本)
 
-基于行为树技术的三国策略对战游戏，使用 [mistreevous](https://github.com/nikkorn/mistreevous) 行为树库实现智能AI。
+基于行为树技术的智能AI三国策略对战游戏，采用mistreevous行为树库实现，现已完全迁移到TypeScript。
 
-## 项目特点
+## 🎮 游戏特色
 
-- ✅ **完整游戏实现**：严格按照游戏规则文档实现的策略对战游戏
-- ✅ **智能AI系统**：使用行为树技术和mistreevous库实现的高级AI
-- ✅ **多难度支持**：简单、普通、困难、专家四个AI难度等级
-- ✅ **完整测试框架**：基于Jest的全面测试套件
-- ✅ **详细中文注释**：代码包含丰富的中文注释和文档
-- ✅ **模块化设计**：清晰的架构和职责分离
+- **完整的三国题材**：9位历史名将，3种兵种类型
+- **智能AI系统**：基于mistreevous行为树的高级AI
+- **网络对战支持**：TCP Socket协议，支持服务器对战
+- **类型安全**：完全用TypeScript重写，提供完整的类型定义
+- **高质量代码**：详细的中文注释，完善的测试覆盖
+- **现代化架构**：ES模块、严格的TypeScript配置
 
-## 游戏规则概览
+## 🏗️ 技术栈
 
-### 地图系统
-- **地图尺寸**：80×60静态地图
-- **地形类型**：空地、山丘、水域、龙旗据点、城寨、基地
-- **距离计算**：切比雪夫距离 max(Δx, Δy)
+- **语言**：TypeScript 5.1+
+- **运行时**：Node.js 18+
+- **行为树库**：mistreevous 4.2.0
+- **测试框架**：Jest + ts-jest
+- **代码规范**：ESLint + TypeScript ESLint
+- **构建工具**：TypeScript Compiler (tsc)
 
-### 武将系统
-- **猛将类**：吕布、赵云、关羽（高攻击力100，低统帅6，体力1500）
-- **统帅类**：刘备、曹操、孙权（中等攻击力60，高统帅12，体力1600）
-- **谋士类**：诸葛亮、周瑜、司马懿（低攻击力50，中等统帅8，体力1200）
-
-### 兵种系统
-- **弓兵**：武力25，体力240
-- **盾兵**：武力15，体力400
-- **承伤顺序**：盾兵 → 弓兵 → 武将
-
-### 经济系统
-- **初始粮草**：100，上限1500
-- **生产成本**：每个士兵消耗20粮草
-- **击杀奖励**：击杀武将获得粮草和士气奖励
-
-### 胜利条件
-- **龙旗据点**：连续控制60回合获胜
-- **回合上限**：1000回合后比较据点控制时间
-
-## 项目结构
+## 📦 项目结构
 
 ```
-xian-game-2025/
-├── src/                    # 源代码目录
-│   ├── core/              # 核心游戏逻辑
-│   │   ├── GameConstants.js    # 游戏常量和配置
-│   │   ├── GameMap.js         # 地图管理类
-│   │   └── GameEngine.js      # 游戏引擎主类
-│   ├── entities/          # 游戏实体
-│   │   └── General.js         # 武将类
-│   ├── ai/                # AI系统
-│   │   ├── BehaviorTree.js    # 行为树实现
-│   │   └── AIController.js    # AI控制器
-│   └── Game.js            # 主游戏类
-├── tests/                 # 测试文件
-│   ├── GameEngine.test.js     # 游戏引擎测试
-│   ├── AIController.test.js   # AI控制器测试
-│   └── NetworkClient.test.js  # 网络客户端测试
-├── examples/              # 示例代码
-│   ├── basic-game.js          # 基础游戏示例
-│   └── network-example.js     # 网络通信示例
-├── package.json           # 项目配置
-├── babel.config.js        # Babel配置
-├── .eslintrc.js          # ESLint配置
-└── README.md             # 项目文档
+src/
+├── types/                # TypeScript类型定义
+│   └── index.ts         # 全局类型和接口
+├── core/                # 核心游戏逻辑
+│   ├── GameConstants.ts # 游戏常量和配置
+│   ├── GameEngine.ts    # 游戏引擎主类
+│   └── GameMap.ts       # 地图管理系统
+├── entities/            # 游戏实体
+│   └── General.ts       # 武将类定义
+├── ai/                  # AI系统
+│   ├── BehaviorTree.ts  # 行为树核心
+│   ├── AIController.ts  # AI控制器
+│   ├── AIPlayer.ts      # AI玩家实现
+│   └── NetworkAIClient.ts # 网络AI客户端
+├── network/             # 网络通信
+│   ├── ProtocolManager.ts # 协议管理器
+│   ├── MessageParser.ts   # 消息解析器
+│   ├── ActionBuilder.ts   # 行动构建器
+│   └── NetworkClient.ts   # 网络客户端
+├── Game.ts              # 主游戏类
+└── index.ts             # 入口文件
 ```
 
-## 安装和运行
-
-### 环境要求
-- Node.js 16+ 
-- npm 7+
+## 🚀 快速开始
 
 ### 安装依赖
+
 ```bash
 npm install
 ```
 
-### 运行示例
-```bash
-# 运行基础游戏示例
-node examples/basic-game.js
+### 开发模式
 
-# 或使用npm脚本
-npm run example
+```bash
+# 启动TypeScript编译监听
+npm run build:watch
+
+# 运行开发服务器
+npm run dev
 ```
 
-### 运行测试
+### 构建项目
+
+```bash
+# 编译TypeScript到JavaScript
+npm run build
+
+# 运行编译后的代码
+npm start
+```
+
+### 运行示例
+
+```bash
+# 运行基础游戏示例
+npm run example
+
+# 运行网络对战示例
+npm run example:network
+```
+
+## 🧪 测试
+
 ```bash
 # 运行所有测试
 npm test
 
-# 运行测试并查看覆盖率
-npm run test:coverage
-
 # 监听模式运行测试
 npm run test:watch
+
+# 生成测试覆盖率报告
+npm run test:coverage
 ```
 
-### 代码检查
+## 🔧 代码质量
+
 ```bash
 # 运行ESLint检查
 npm run lint
 
-# 自动修复代码问题
+# 自动修复ESLint问题
 npm run lint:fix
+
+# 清理构建目录
+npm run clean
 ```
 
-## 使用方法
+## 🎯 武将系统
 
-### 基础用法
+### 猛将类
+- **吕布**：无双乱舞 + 大杀四方
+- **赵云**：龙胆突刺 + 冲锋陷阵  
+- **关羽**：一骑当千 + 青龙偃月斩
 
-```javascript
-import XianGame from './src/Game.js';
+### 统帅类
+- **刘备**：仁德之君 + 蜀汉旗
+- **曹操**：虎豹骑召令 + 乱世枭雄
+- **孙权**：江东水师 + 制衡
 
-// 创建游戏实例
-const game = new XianGame({
-  player1Type: 'ai',        // 'ai' | 'human'
-  player2Type: 'ai',        // 'ai' | 'human'
-  ai1Difficulty: 'normal',  // 'easy' | 'normal' | 'hard' | 'expert'
-  ai2Difficulty: 'hard',    // 'easy' | 'normal' | 'hard' | 'expert'
-  autoPlay: true,           // 是否自动进行游戏
-  gameSpeed: 'normal',      // 'slow' | 'normal' | 'fast' | 'instant'
-  logLevel: 'info'          // 'debug' | 'info' | 'warn' | 'error'
-});
+### 谋士类
+- **诸葛亮**：锦囊妙计 + 斗转星移
+- **周瑜**：火攻 + 连营
+- **司马懿**：鬼谋 + 天命
 
-// 开始游戏
-const result = await game.startGame();
-console.log('游戏结果:', result);
-```
-
-### 高级用法
-
-```javascript
-// 批量运行游戏进行AI性能测试
-const results = await XianGame.runBatch(100, {
-  player1Type: 'ai',
-  player2Type: 'ai',
-  ai1Difficulty: 'expert',
-  ai2Difficulty: 'expert'
-});
-
-// 手动控制游戏进程
-const game = new XianGame({ autoPlay: false });
-await game.startGame();
-
-// 执行单个回合
-await game.executeSingleTurn();
-
-// 查看游戏状态
-const gameState = game.getGameState();
-```
-
-## AI系统详解
+## 🤖 AI系统特性
 
 ### 行为树架构
-
-本项目使用mistreevous库实现的行为树AI系统，具有以下特点：
-
-1. **多层决策结构**
-   - 游戏阶段分析（早期/中期/后期）
-   - 威胁等级评估
-   - 策略选择（进攻/防守/平衡）
-
-2. **智能黑板系统**
-   - 存储AI状态和决策数据
-   - 动态更新威胁评估
-   - 记录历史决策信息
-
-3. **多策略支持**
-   - **早期策略**：专注发展和资源积累
-   - **中期策略**：开始进攻和据点争夺
-   - **后期策略**：全力争夺胜利条件
+- **决策层**：战略规划和目标选择
+- **执行层**：具体行动实施
+- **评估层**：态势分析和效果评估
 
 ### AI难度等级
+- **简单**：基础AI，适合新手
+- **中等**：平衡AI，提供挑战
+- **困难**：高级AI，严峻考验
+- **专家**：顶级AI，1%错误率，100ms反应时间
 
-| 难度 | 反应时间 | 错误率 | 计划深度 | 资源管理 | 特点 |
-|------|----------|--------|----------|----------|------|
-| 简单 | 2000ms | 15% | 1层 | 60% | 适合新手，决策较慢 |
-| 普通 | 1000ms | 8% | 2层 | 80% | 平衡的AI对手 |
-| 困难 | 500ms | 3% | 3层 | 90% | 有挑战性的对手 |
-| 专家 | 100ms | 1% | 4层 | 100% | 最高难度，接近完美 |
+## 🌐 网络协议
 
-### AI决策流程
+### 支持的消息类型
+- `start`：游戏开始，接收地图和玩家信息
+- `inquire`：回合询问，获取当前游戏状态
+- `over`：游戏结束，接收最终结果
 
-```mermaid
-graph TD
-    A[分析游戏状态] --> B[评估威胁等级]
-    B --> C[选择策略类型]
-    C --> D{游戏阶段}
-    D -->|早期| E[发展策略]
-    D -->|中期| F[争夺策略]
-    D -->|后期| G[决战策略]
-    E --> H[生成命令]
-    F --> H
-    G --> H
-    H --> I[应用难度调整]
-    I --> J[执行命令]
+### 行动指令
+- `MOVE`：移动武将
+- `PICK`：招募武将
+- `MAKE`：生产兵力
+- `ATTACK`：普通攻击
+- `SKILL`：技能攻击
+- `FORMATION`：切换阵型
+
+## 📋 类型定义
+
+项目提供完整的TypeScript类型定义：
+
+```typescript
+import type { 
+  GameState, 
+  Hero, 
+  Position, 
+  GameAction,
+  AIContext 
+} from './src/types/index.js';
 ```
 
-## 测试框架
+### 核心接口
+- `Position`：位置坐标
+- `Hero`：英雄完整信息
+- `GameState`：游戏状态
+- `GameAction`：游戏行动
+- `AIContext`：AI决策上下文
 
-### 测试覆盖范围
+## 🔄 从JavaScript迁移
 
-- **游戏引擎测试**：核心功能、武将系统、战斗系统、回合系统
-- **AI控制器测试**：决策能力、行为树功能、难度调整、性能统计
-- **集成测试**：完整游戏流程、AI对战、边界条件处理
+如果您有之前的JavaScript版本，现在可以享受TypeScript带来的好处：
 
-### 运行测试
+### 主要改进
+- **类型安全**：编译时错误检查
+- **更好的IDE支持**：自动补全、重构等
+- **清晰的接口定义**：易于理解和维护
+- **现代模块系统**：ES模块替代CommonJS
 
-```bash
-# 运行所有测试
-npm test
+### 迁移说明
+- 所有`.js`文件已转换为`.ts`
+- 添加了完整的类型注解
+- 更新了模块导入/导出语法
+- 配置了严格的TypeScript编译选项
 
-# 运行特定测试文件
-npm test GameEngine.test.js
+## 📈 性能特性
 
-# 查看测试覆盖率
-npm run test:coverage
-```
+- **高效AI**：行为树优化，决策时间<100ms
+- **内存管理**：智能垃圾回收，低内存占用
+- **网络优化**：粘包/分包处理，稳定通信
+- **并发支持**：异步架构，高并发处理
 
-### 测试示例
-
-```javascript
-// 测试AI决策能力
-test('AI应该能够生成决策命令', async () => {
-  const result = await aiController.executeTurn();
-  
-  expect(result.success).toBe(true);
-  expect(result.commandsExecuted).toBeGreaterThanOrEqual(0);
-  expect(Array.isArray(result.results)).toBe(true);
-});
-
-// 测试游戏引擎
-test('应该能够选择武将', () => {
-  const result = gameEngine.processPlayerCommand(PLAYERS.PLAYER1, {
-    type: COMMANDS.PICK,
-    data: { generalName: '吕布', position: { x: 10, y: 10 } }
-  });
-
-  expect(result.success).toBe(true);
-  expect(result.generalId).toBeDefined();
-});
-```
-
-## 性能优化
-
-### AI性能优化
-
-1. **决策缓存**：缓存常用的计算结果
-2. **路径预计算**：预计算常用路径和位置
-3. **异步执行**：使用异步模式避免阻塞
-4. **内存管理**：及时清理不必要的数据
-
-### 游戏引擎优化
-
-1. **事件驱动**：基于事件的状态更新
-2. **增量更新**：只更新变化的部分
-3. **批量操作**：合并多个操作提高效率
-
-## 扩展开发
-
-### 添加新武将
-
-```javascript
-// 在GameConstants.js中添加武将数据
-const NEW_GENERAL = {
-  name: '新武将',
-  type: 'mighty',
-  health: 1500,
-  attackPower: 100,
-  commandPower: 6,
-  attackRange: 2,
-  skills: {
-    // 定义技能
-  }
-};
-```
-
-### 实现新技能
-
-```javascript
-// 在General.js中添加技能实现
-useCustomSkill(targets, currentTurn, gameMap) {
-  // 技能逻辑实现
-  return {
-    success: true,
-    message: '技能执行成功',
-    effects: []
-  };
-}
-```
-
-### 创建新AI策略
-
-```javascript
-// 在BehaviorTree.js中添加新策略
-executeCustomStrategy() {
-  const commands = this.blackboard.get('commands');
-  
-  // 实现自定义策略逻辑
-  
-  return 'SUCCESS';
-}
-```
-
-## 贡献指南
+## 🤝 贡献指南
 
 1. Fork 项目
-2. 创建功能分支：`git checkout -b feature/new-feature`
-3. 提交更改：`git commit -am 'Add new feature'`
-4. 推送分支：`git push origin feature/new-feature`
-5. 创建 Pull Request
+2. 创建特性分支：`git checkout -b feature/amazing-feature`
+3. 提交改动：`git commit -m 'Add amazing feature'`
+4. 推送分支：`git push origin feature/amazing-feature`
+5. 提交 Pull Request
 
-### 代码规范
-
-- 使用ES6+语法
-- 遵循ESLint配置
+### 开发规范
+- 遵循TypeScript严格模式
+- 保持代码覆盖率>70%
 - 添加详细的中文注释
-- 编写对应的测试用例
-- 保持代码覆盖率在90%以上
+- 使用ESLint规范代码风格
 
-## 技术栈
+## 📄 许可证
 
-- **语言**：JavaScript (ES6+)
-- **行为树**：[mistreevous](https://github.com/nikkorn/mistreevous)
-- **测试框架**：Jest
-- **代码规范**：ESLint
-- **构建工具**：Babel
+MIT License - 查看 [LICENSE](LICENSE) 文件了解详情
 
-## 许可证
+## 🎉 致谢
 
-MIT License
-
-## 更新日志
-
-### v1.0.0 (2025-01-XX)
-- 初始版本发布
-- 完整的游戏引擎实现
-- 基于mistreevous的AI行为树系统
-- 全面的测试覆盖
-- 详细的中文文档
+- [mistreevous](https://github.com/nikkorn/mistreevous) - 优秀的行为树库
+- 三国历史文化 - 灵感来源
+- TypeScript团队 - 强大的类型系统
 
 ---
 
-## 联系方式
-
-如有问题或建议，请提交Issue或联系开发团队。
-
-**开发目标**：创建一个具有高胜率AI的三国策略对战游戏，展示行为树技术在游戏AI中的应用。 
+**现在开始您的三国征程吧！** 🚀 

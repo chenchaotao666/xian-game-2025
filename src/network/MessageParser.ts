@@ -3,7 +3,7 @@
  * 负责解析从服务器接收到的各种消息格式
  */
 
-const { TERRAIN_TYPES, CAMP_TYPES, HERO_STATUS } = require('./ProtocolManager');
+import { TERRAIN_TYPES, CAMP_TYPES, HERO_STATUS } from './ProtocolManager';
 
 /**
  * 消息解析器类
@@ -729,4 +729,4 @@ class MessageParser {
     }
 }
 
-module.exports = MessageParser; 
+export default MessageParser; 
