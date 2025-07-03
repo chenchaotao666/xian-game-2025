@@ -15,7 +15,7 @@ const config: GameConfig = {
     serverPort: parseInt(process.env.SERVER_PORT || '30000'),
 
     // 玩家配置
-    playerId: parseInt(process.env.PLAYER_ID || '1001'),
+    playerId: parseInt(process.env.PLAYER_ID || '8680'),
     playerName: process.env.PLAYER_NAME || 'Player',
 
     // 游戏模式配置

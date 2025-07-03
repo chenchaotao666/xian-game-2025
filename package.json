@@ -9,7 +9,7 @@
     "build": "tsc",
     "build:watch": "tsc --watch",
     "dev": "ts-node --esm src/index.ts",
-    "start": "node dist/index.js",
+    "start": "tsx src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -36,11 +36,11 @@
     "rimraf": "^5.0.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.0",
-    "typescript": "^5.1.0"
+    "typescript": "^5.8.3"
   },
   "keywords": [
     "三国",
-    "策略游戏", 
+    "策略游戏",
     "行为树",
     "AI",
     "mistreevous",
@@ -48,4 +48,4 @@
   ],
   "author": "AI Assistant",
   "license": "MIT"
-} 
+}

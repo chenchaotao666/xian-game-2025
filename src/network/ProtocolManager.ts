@@ -240,7 +240,9 @@ class ProtocolManager extends EventEmitter {
 
             try {
                 const message: ProtocolMessage = JSON.parse(messageStr);
-                this.handleMessage(message);
+                this.handleMessage(message).catch(error => {
+                    console.error('[协议管理器] 处理消息时发生错误:', error);
+                });
             } catch (error) {
                 console.error('[协议管理器] JSON解析错误:', error, messageStr);
             }
@@ -254,12 +256,22 @@ class ProtocolManager extends EventEmitter {
      * 处理解析后的消息
      * @param message 解析后的消息对象
      */
-    private handleMessage(message: ProtocolMessage): void {
+    private async handleMessage(message: ProtocolMessage): Promise<void> {
         console.log(`[协议管理器] 收到消息: ${message.msg_name}`);
         
         switch (message.msg_name) {
             case 'start':
+                // 触发gameStart事件
                 this.emit('gameStart', message.msg_data as GameStartData);
+                
+                // 自动发送ready消息
+                try {
+                    console.log(`[协议管理器] 收到start消息，自动发送ready消息`);
+                    await this.sendReady();
+                    console.log(`[协议管理器] ready消息发送成功`);
+                } catch (error) {
+                    console.error(`[协议管理器] 发送ready消息失败:`, error);
+                }
                 break;
             case 'inquire':
                 this.emit('inquire', message.msg_data as GameState);
@@ -325,7 +337,7 @@ class ProtocolManager extends EventEmitter {
             version: this.version
         };
 
-        return this.sendMessage(registrationData, 'register');
+        return this.sendMessage(registrationData, 'registration');
     }
 
     /**
