@@ -1,9 +1,15 @@
-# Node.js 依赖
+# ========== Node.js 相关 ==========
+# 依赖包目录
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+
+# 包管理器锁定文件
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # 运行时数据
 pids
@@ -11,44 +17,57 @@ pids
 *.seed
 *.pid.lock
 
-# 覆盖率报告
-lib-cov
+# Coverage directory used by tools like istanbul
 coverage/
 *.lcov
 
-# nyc 测试覆盖率
+# nyc test coverage
 .nyc_output
 
-# 编译输出
-build/
-dist/
-out/
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
 
-# TypeScript 缓存
+# Bower dependency directory (https://bower.io/)
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Snowpack dependency directory (https://snowpack.dev/)
+web_modules/
+
+# TypeScript cache
 *.tsbuildinfo
 
-# 可选的 npm 缓存目录
+# Optional npm cache directory
 .npm
 
-# 可选的 eslint 缓存
+# Optional eslint cache
 .eslintcache
 
-# Microbundle 缓存
+# Microbundle cache
 .rpt2_cache/
 .rts2_cache_cjs/
 .rts2_cache_es/
 .rts2_cache_umd/
 
-# 可选的 REPL 历史
+# Optional REPL history
 .node_repl_history
 
-# 输出的 npm 包
+# Output of 'npm pack'
 *.tgz
 
-# Yarn 完整性文件
+# Yarn Integrity file
 .yarn-integrity
 
-# dotenv 环境变量文件
+# dotenv environment variables file
 .env
 .env.test
 .env.production
@@ -57,89 +76,187 @@ out/
 .env.test.local
 .env.production.local
 
-# parcel-bundler 缓存 (https://parceljs.org/)
+# parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
 
-# Next.js 构建输出
+# Next.js build output
 .next
 
-# Nuxt.js 构建/生成输出
+# Nuxt.js build / generate output
 .nuxt
 dist
 
-# Gatsby 文件
+# Gatsby files
 .cache/
 public
 
-# Vite 构建工具
-.vite
-
-# Rollup.js 可选输出目录
-.rollup.cache/
-
-# Storybook 构建输出
+# Storybook build outputs
 .out
 .storybook-out
 
-# 临时文件夹
+# Temporary folders
 tmp/
 temp/
 
-# 运行时数据
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# 编辑器和IDE
+# ========== 编辑器和IDE ==========
+# VSCode
 .vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains IDEs (IntelliJ, WebStorm, PhpStorm等)
 .idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
 *.swp
 *.swo
 *~
 
-# 操作系统生成的文件
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ========== 操作系统 ==========
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
+Icon?
 ehthumbs.db
-Thumbs.db
 
-# Windows 系统文件
-desktop.ini
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
 
-# 日志文件
+# ========== 日志文件 ==========
+# 应用日志
+logs/
 *.log
-logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pino-debug.log*
 
-# 备份文件
-*.backup
-*.bak
-*-backup.ts
-*-backup.js
+# 游戏相关日志
+game-logs/
+battle-logs/
+ai-logs/
+debug-*.log
+error-*.log
 
-# 测试生成的文件
-.jest/
-jest_*
+# ========== 测试和构建 ==========
+# Jest测试覆盖率
 coverage/
+*.lcov
 
-# 项目特定的临时文件
+# 测试输出
+test-results/
+test-reports/
+
+# 构建输出
+build/
+dist/
+out/
+
+# ========== 项目特定 ==========
+# 游戏数据和配置
+config/local.json
+config/production.json
+game-data/saves/
+replay-files/
+
+# AI训练数据
+ai-training-data/
+behavior-tree-cache/
+*.bt.cache
+
+# 性能分析文件
+*.cpuprofile
+*.heapsnapshot
+
+# 网络通信日志
+network-logs/
+protocol-debug/
+
+# 临时文件
+temp-*
 *.tmp
 *.temp
 
+# 备份文件
+*.bak
+*.backup
+*_backup
+*_bak
+
+# ========== 安全敏感文件 ==========
+# 密钥和证书
+*.key
+*.pem
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# 配置文件中的敏感信息
+secrets.json
+credentials.json
+.secrets
+.credentials
+
+# ========== 其他 ==========
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# 大文件
+*.iso
+*.dmg
+
+# 文档生成
+docs/generated/
+api-docs/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
 # 缓存目录
 .cache/
-.parcel-cache/
-.rollup.cache/
-
-# 打包文件
-*.tar.gz
-*.zip
-*.rar
-
-# 开发时的临时配置
-.env.development
-.env.staging 
+cache/ 

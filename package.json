@@ -1,14 +1,19 @@
 {
-  "name": "game",
+  "name": "xian-game-2025",
   "version": "1.0.0",
-  "description": "基于效用AI系统的回合制战术游戏框架，支持多种聚合方法、团队协作、A*寻路和复杂决策系统",
+  "description": "三国策略对战游戏 - 基于行为树的AI实现",
+  "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "start": "vite helper/",
-    "compile": "rollup -c rollup.config.mjs",
-    "test": "jest -c jest.config.mjs"
+    "test": "jest -c jest.config.mjs",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "example": "node examples/basic-game.js",
+    "start": "node examples/basic-game.js"
   },
   "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-swc": "^0.4.0",
@@ -23,12 +28,22 @@
     "rollup": "^4.44.1",
     "tslib": "^2.8.1",
     "typescript": "^5.6.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "eslint": "^8.42.0"
   },
   "private": true,
   "dependencies": {
     "mistreevous": "^4.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
-  }
-}
+  },
+  "keywords": [
+    "三国",
+    "策略游戏", 
+    "行为树",
+    "AI",
+    "mistreevous"
+  ],
+  "author": "AI Assistant",
+  "license": "MIT"
+} 
