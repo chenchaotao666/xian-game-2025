@@ -431,12 +431,29 @@ export interface RangeQueryResult<T> {
 
 /** 游戏配置 */
 export interface GameConfig {
-    maxRounds: number;
-    mapSize: { width: number; height: number };
-    initialSupplies: number;
-    maxSupplies: number;
-    soldierCost: number;
-    victoryConditions: {
+    // 服务器连接配置
+    serverHost?: string;
+    serverPort?: number;
+    
+    // 玩家配置
+    playerId?: number;
+    playerName?: string;
+    
+    // 游戏模式配置
+    gameMode?: 'human' | 'ai';
+    aiDifficulty?: 'easy' | 'normal' | 'hard' | 'expert';
+    
+    // 连接配置
+    autoReconnect?: boolean;
+    logLevel?: 'debug' | 'info' | 'warn' | 'error';
+    
+    // 游戏规则配置（可选）
+    maxRounds?: number;
+    mapSize?: { width: number; height: number };
+    initialSupplies?: number;
+    maxSupplies?: number;
+    soldierCost?: number;
+    victoryConditions?: {
         occupyRounds: number;
         alternativeRounds: number;
     };
