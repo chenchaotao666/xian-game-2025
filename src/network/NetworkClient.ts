@@ -16,7 +16,6 @@ import { TeamBlackboard } from '../core/TeamBlackboard.js';
 class NetworkClient extends EventEmitter {
     private protocolManager: any;
     private gameState: any;
-    private statistics: any;
     private teamBlackboard: TeamBlackboard | null = null;  // 可选的TeamBlackboard实例
 
     constructor() {
@@ -35,16 +34,6 @@ class NetworkClient extends EventEmitter {
             camp: null,
             lastGameData: null,
             mapData: null
-        };
-
-        // 统计信息
-        this.statistics = {
-            messagesReceived: 0,
-            messagesSent: 0,
-            actionsExecuted: 0,
-            gameResults: [],
-            connectionTime: null,
-            lastActivity: null
         };
 
         // 绑定协议管理器事件
@@ -88,9 +77,6 @@ class NetworkClient extends EventEmitter {
                     console.log(`[网络客户端] 我方阵营: ${myInfo.campName}`);
                 }
 
-                this.statistics.messagesReceived++;
-                this.statistics.lastActivity = new Date().toISOString();
-
                 // 触发游戏开始事件
                 this.emit('gameStart', parsedData);
 
@@ -122,9 +108,6 @@ class NetworkClient extends EventEmitter {
                     }
                 }
 
-                this.statistics.messagesReceived++;
-                this.statistics.lastActivity = new Date().toISOString();
-
                 // 触发询问事件，让AI或玩家决策
                 this.emit('inquire', parsedData);
 
@@ -141,8 +124,6 @@ class NetworkClient extends EventEmitter {
                 const parsedData = MessageParser.parseOverMessage(overData);
                 
                 this.gameState.gameStarted = false;
-                this.statistics.messagesReceived++;
-                this.statistics.gameResults.push(parsedData);
 
                 // 触发游戏结束事件
                 this.emit('gameOver', parsedData);
@@ -188,7 +169,6 @@ class NetworkClient extends EventEmitter {
             
             if (success) {
                 this.gameState.connected = true;
-                this.statistics.connectionTime = new Date().toISOString();
                 console.log('[网络客户端] 连接成功，已发送注册消息');
                 this.emit('connected');
             }
@@ -210,7 +190,6 @@ class NetworkClient extends EventEmitter {
         try {
             const success = await this.protocolManager.sendReady();
             if (success) {
-                this.statistics.messagesSent++;
                 console.log('[网络客户端] 准备完成消息已发送');
             }
             return success;
@@ -241,9 +220,6 @@ class NetworkClient extends EventEmitter {
             const success = await this.protocolManager.sendAction(this.gameState.currentRound, actions);
             
             if (success) {
-                this.statistics.messagesSent++;
-                this.statistics.actionsExecuted += actions.length;
-                
                 // 记录行动日志
                 console.log(`[网络客户端] 第${this.gameState.currentRound}回合行动已发送:`);
                 actions.forEach((action, index) => {
@@ -412,41 +388,6 @@ class NetworkClient extends EventEmitter {
     }
 
     /**
-     * 获取统计信息
-     * @returns {Object} 统计数据
-     */
-    getStatistics() {
-        return {
-            ...this.statistics,
-            currentGameState: this.getGameState(),
-            upTime: this.statistics.connectionTime ? 
-                Date.now() - new Date(this.statistics.connectionTime).getTime() : 0
-        };
-    }
-
-    /**
-     * 重置统计信息
-     */
-    resetStatistics() {
-        this.statistics = {
-            messagesReceived: 0,
-            messagesSent: 0,
-            actionsExecuted: 0,
-            gameResults: [],
-            connectionTime: this.statistics.connectionTime, // 保留连接时间
-            lastActivity: null
-        };
-    }
-
-    /**
-     * 获取游戏历史记录
-     * @returns {Array} 游戏结果数组
-     */
-    getGameHistory() {
-        return [...this.statistics.gameResults];
-    }
-
-    /**
      * 获取连接诊断信息
      * @returns {Object} 诊断信息
      */
@@ -457,9 +398,6 @@ class NetworkClient extends EventEmitter {
             currentRound: this.gameState.currentRound,
             playerId: this.gameState.playerId,
             camp: this.gameState.camp,
-            messagesReceived: this.statistics.messagesReceived,
-            messagesSent: this.statistics.messagesSent,
-            lastActivity: this.statistics.lastActivity,
             socketStatus: this.protocolManager.socket ? {
                 readyState: this.protocolManager.socket.readyState,
                 destroyed: this.protocolManager.socket.destroyed
@@ -474,7 +412,6 @@ class NetworkClient extends EventEmitter {
     exportState() {
         return {
             gameState: this.getGameState(),
-            statistics: this.getStatistics(),
             diagnostics: this.getDiagnostics(),
             timestamp: new Date().toISOString()
         };
