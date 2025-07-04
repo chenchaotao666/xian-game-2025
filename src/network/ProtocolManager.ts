@@ -100,6 +100,7 @@ export interface RegistrationData {
 export interface ActionData {
     round: number;
     actions: GameAction[];
+    playerId: number;
 }
 
 /** 协议管理器事件接口 */
@@ -362,7 +363,8 @@ class ProtocolManager extends EventEmitter {
     async sendAction(round: number, actions: GameAction[]): Promise<boolean> {
         const actionData: ActionData = {
             round: round,
-            actions: actions
+            actions: actions,
+            playerId: this.playerId!
         };
 
         return this.sendMessage(actionData, 'action');
