@@ -3,8 +3,14 @@
  * 程序入口文件 - 用于连接服务器和启动游戏客户端
  */
 
+import { ExecutePickGenerals } from './actions/GameStateActions.js';
+import { handleTurn, init } from './core/index.js';
+import { ActionContext } from './core/types.js';
+import { sunquan, zhaoyun, zhugeliang } from './models/heros.js';
+import { InquireMessageData } from './models/inquireMsg.js';
+import ActionBuilder from './network/ActionBuilder.js';
 import NetworkClient from './network/NetworkClient.js';
-import type { GameConfig } from './types/index.js';
+import type { GameConfig, InquireMessage } from './types/index.js';
 
 /**
  * 游戏配置
@@ -109,8 +115,13 @@ function setupClientEventListeners(client: NetworkClient): void {
             log(`游戏结束 - 获胜者: ${result.winner?.playerName || '未知'}`, 'info');
         });
 
-        client.on('inquire', (gameData: any) => {
+        client.on('inquire', (gameData: InquireMessageData) => {
             log(`第${gameData.round}回合 - 等待行动`, 'debug');
+            if (gameData.round === 1) {
+                init(client.getGameState().playerId);
+            } else {
+                handleTurn();
+            }
         });
     }
 }
@@ -154,17 +165,17 @@ const maxRetries = 5;
 let retryCount = 0;
 
 const connectWithRetry = () => {
-  setTimeout(() => {
-    if (retryCount < maxRetries) {
-      retryCount++;
-      console.log(`重试连接 (${retryCount}/${maxRetries})`);
-      // 启动程序
-      main().catch((error) => {
-        console.error('程序启动失败:', error);
-        process.exit(1);
-      });
-    }
-  }, 2000); // 2秒后重试
+    setTimeout(() => {
+        if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`重试连接 (${retryCount}/${maxRetries})`);
+            // 启动程序
+            main().catch((error) => {
+                console.error('程序启动失败:', error);
+                process.exit(1);
+            });
+        }
+    }, 2000); // 2秒后重试
 };
 
 connectWithRetry();

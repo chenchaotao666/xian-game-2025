@@ -29,7 +29,7 @@ export class TeamBlackboard {
   public support: Agent;
   public leader: Agent;
 
-  constructor(public food: number) {
+  constructor(public food: number = 100) {
   }
 
   setTeam(warrior: Agent, support: Agent, leader: Agent) {
