@@ -8,7 +8,7 @@
  * @version 2.0.0
  */
 
-import { State } from 'mistreevous';
+import { BehaviourTree, State } from 'mistreevous';
 import { IAgent, Position, ActionContext } from '../core/types';
 import { GameMap } from '../context/gameMap';
 
@@ -17,6 +17,8 @@ import * as conditions from '../conditions';
 
 // 导入所有动作类
 import * as actions from '../actions';
+import { heroBehaviorTree } from './BehaviorTree';
+import { Agent } from 'mistreevous/dist/Agent';
 
 /**
  * 行为树节点接口
@@ -78,15 +80,33 @@ interface IBehaviorTreeNodes {
  */
 export class BehaviorTreeAgent implements IBehaviorTreeNodes {
   constructor(
-    public agent: IAgent,
-    public gameMap: GameMap,
-    public allAgents: IAgent[]
+    public context: ActionContext
   ) {
     // 动态绑定所有条件函数
     this.bindNodes(conditions);
     
     // 动态绑定所有动作类
     this.bindNodes(actions);
+  }
+
+  public executeHeroBehaviorTree(agent: IAgent) {
+    // 切换上下文武将
+    this.context.agent = agent;
+    const bt = new BehaviourTree(heroBehaviorTree, this as unknown as Agent);
+    bt.step();
+    this.context.agent = null;
+  }
+
+  public executeWarriorActions(): void {
+    this.executeHeroBehaviorTree(this.context.teamBlackboard.warrior);
+  }
+
+  public executeLeaderActions(): void {
+    this.executeHeroBehaviorTree(this.context.teamBlackboard.leader);
+  }
+  
+  public executeSupportActions(): void {
+    this.executeHeroBehaviorTree(this.context.teamBlackboard.support);
   }
 
   /**
@@ -106,7 +126,7 @@ export class BehaviorTreeAgent implements IBehaviorTreeNodes {
             return conditionFn();
           } else {
             // 需要context的条件函数
-            return conditionFn(this.getContext());
+            return conditionFn(this.context);
           }
         };
       }
@@ -118,17 +138,6 @@ export class BehaviorTreeAgent implements IBehaviorTreeNodes {
    */
   public toPascalCase(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-
-  /**
-   * 获取动作上下文
-   */
-  private getContext(): ActionContext {
-    return {
-      agent: this.agent,
-      gameMap: this.gameMap,
-      teamBlackboard: this.agent.teamBlackboard
-    };
   }
 
   // ============== 接口实现（运行时由动态绑定提供） ==============

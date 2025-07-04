@@ -64,6 +64,9 @@ export type PartialExcept<T, K extends keyof T> = Pick<T, K> & { [P in Exclude<k
 
 // 前向声明，避免循环依赖
 export interface TeamBlackboard {
+  warrior: IAgent;
+  support: IAgent;
+  leader: IAgent;
   setFocusTarget(targetId: string | null): void;
   getFocusTargetId(): string | undefined;
   setTargetDebuff(targetId: string, debuffType: string, sourceSkill: string, durationTurns: number, currentTurn: number): void;
@@ -124,7 +127,7 @@ export interface IAgent {
  */
 export interface ActionContext {
   playerId: number;                          // 玩家ID
-  agent: IAgent;                              // 执行行为的代理（或其模拟状态）
+  agent: IAgent | null;                       // 当前执行行为的代理（或其模拟状态）
   gameMap: GameMap;                           // 方便动作和考量因素访问地图信息
   potentialTarget?: IAgentState;              // 行为的潜在目标（或其模拟状态）
   skillId?: string;                           // 涉及的技能ID（如果适用）

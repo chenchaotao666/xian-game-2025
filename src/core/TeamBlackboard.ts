@@ -25,9 +25,9 @@ export class TeamBlackboard {
   private data: Map<string, any> = new Map();              // 通用数据存储
   private currentObjectives: GlobalObjective[] = [];       // 支持多个目标，按优先级排序
 
-  private warrior: Agent;
-  private support: Agent;
-  private leader: Agent;
+  public warrior: Agent;
+  public support: Agent;
+  public leader: Agent;
 
   constructor(public food: number) {
   }

@@ -45,18 +45,16 @@ export const teamBehaviorTree = `root {
                     condition [CanCaptureDragonFlag]
                     action [ExecuteCaptureFlag]
                 }
+                    
+                /* === 执行武将行动 === */
+                parallel {
+                    action [ExecuteWarriorActions]
+                    action [ExecuteLeaderActions] 
+                    action [ExecuteSupportActions]
+                }
             }
         }
-      
-      /* === 第三步：根据策略分配武将任务 === */
-      action [AssignHeroRoles]
-      
-      /* === 第四步：执行武将行动 === */
-      parallel {
-          action [ExecuteHero0Actions]
-          action [ExecuteHero1Actions] 
-          action [ExecuteHero2Actions]
-      }
+    }
   }
 }`
 
