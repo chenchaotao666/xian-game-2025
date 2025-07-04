@@ -227,9 +227,9 @@ export class TeamBlackboard {
   // 历史记录
   private strategyHistory: StrategyHistoryEntry[] = [];     // 策略历史记录
 
-  private warrior?: Agent;
-  private support?: Agent;
-  private leader?: Agent;
+  public warrior: Agent;
+  public support: Agent;
+  public leader: Agent;
 
   constructor(public food: number) {
   }
