@@ -8,6 +8,7 @@ import NetworkClient from '../src/network/NetworkClient';
 import ActionBuilder from '../src/network/ActionBuilder';
 import MessageParser from '../src/network/MessageParser';
 import type { GameState, GameAction, Position } from '../src/types/index';
+import { TeamBlackboard } from '../src/core/TeamBlackboard.js';
 // 临时类型定义用于示例
 interface GameResult { winner?: any; }
 
@@ -80,6 +81,119 @@ async function basicNetworkExample(): Promise<void> {
     
     // 实际连接代码（需要真实服务器）:
     // await client.connect('127.0.0.1', 8080, 1001, 'TestPlayer');
+}
+
+/**
+ * 带TeamBlackboard的AI客户端示例
+ */
+async function networkWithBlackboardExample(): Promise<void> {
+    console.log('========== NetworkClient + TeamBlackboard 示例 ==========\n');
+    
+    const client = new NetworkClient();
+    const teamBlackboard = new TeamBlackboard(200); // 初始化粮草200
+    
+    // 连接TeamBlackboard到NetworkClient，实现自动数据填充
+    client.setTeamBlackboard(teamBlackboard);
+    console.log('🔗 TeamBlackboard已连接到NetworkClient');
+    
+    // 游戏开始事件
+    client.on('gameStart', (startData: any) => {
+        console.log('🎮 游戏开始 - 开始数据分析');
+        console.log(`🗺️ 地图: ${startData.map.width}x${startData.map.height}`);
+    });
+    
+    // 询问行动事件 - 现在可以使用TeamBlackboard进行智能分析
+    client.on('inquire', async (gameData: GameState) => {
+        console.log(`\n⚡ 第${gameData.round}回合 - 基于TeamBlackboard进行决策`);
+        
+        // 从TeamBlackboard获取分析数据
+        const currentRound = teamBlackboard.getCurrentRound();
+        const myHeroes = teamBlackboard.getMyAliveHeroes();
+        const enemyHeroes = teamBlackboard.getEnemyAliveHeroes();
+        const objectives = teamBlackboard.getAllObjectives();
+        
+        console.log(`📊 数据分析结果:`);
+        console.log(`  - 当前回合: ${currentRound}`);
+        console.log(`  - 我方存活英雄: ${myHeroes.length}个`);
+        console.log(`  - 敌方存活英雄: ${enemyHeroes.length}个`);
+        console.log(`  - 战略目标: ${objectives.length}个`);
+        
+        // 显示当前目标
+        if (objectives.length > 0) {
+            console.log(`🎯 战略目标列表:`);
+            objectives.forEach((obj, index) => {
+                console.log(`  ${index + 1}. ${obj.description} (优先级: ${obj.priority})`);
+            });
+        }
+        
+        // 显示集火目标
+        const focusTarget = teamBlackboard.getFocusTargetId();
+        if (focusTarget) {
+            const targetHero = teamBlackboard.getHeroById(parseInt(focusTarget));
+            if (targetHero) {
+                console.log(`🔥 当前集火目标: 英雄${focusTarget} (血量: ${targetHero.healthPercentage.toFixed(1)}%)`);
+            }
+        }
+        
+        // 基于分析结果构建行动
+        const actions: GameAction[] = [];
+        
+        // 第一回合选择阵容
+        if (currentRound === 1) {
+            actions.push(ActionBuilder.buildPickAction([40, 43, 46], client.getGameState().playerId));
+            console.log(`⚔️ 选择阵容: [吕布, 刘备, 诸葛亮]`);
+        }
+        
+        // 基于资源管理目标进行生产
+        const resourceObjectives = teamBlackboard.getObjectivesByType('RESOURCE_MANAGEMENT');
+        const myPlayer = teamBlackboard.getMyPlayerData();
+        if (resourceObjectives.length > 0 && myPlayer && myPlayer.supplies >= 60) {
+            actions.push(ActionBuilder.buildMakeAction([
+                { roleId: 40, soldiers: [7, 8] }
+            ]));
+            console.log(`🏭 资源管理: 生产兵力`);
+        }
+        
+        // 根据集火目标进行攻击
+        if (focusTarget && myHeroes.length > 0) {
+            const attacker = myHeroes[0];
+            const target = teamBlackboard.getHeroById(parseInt(focusTarget));
+            if (attacker && target && target.position) {
+                actions.push(ActionBuilder.buildAttackAction(attacker.roleId, target.position));
+                console.log(`⚔️ 集火攻击: 英雄${attacker.roleId} -> 英雄${focusTarget}`);
+            }
+        }
+        
+        // 发送行动
+        if (actions.length > 0) {
+            await client.sendActions(actions);
+            console.log(`✅ 发送了${actions.length}个行动指令`);
+        } else {
+            await client.sendActions([]);
+            console.log(`⏭️ 本回合跳过`);
+        }
+    });
+    
+    client.on('gameOver', (result: any) => {
+        console.log('\n🏁 游戏结束 - 最终分析');
+        
+        // 显示最终统计
+        const finalObjectives = teamBlackboard.getAllObjectives();
+        console.log(`📈 最终目标完成情况: ${finalObjectives.length}个目标`);
+        
+        const winner = result.winner.winner;
+        console.log(`🏆 获胜者: ${winner?.playerName || '未知'}`);
+        
+        // 断开连接
+        client.removeTeamBlackboard();
+        client.disconnect();
+    });
+    
+    console.log('📡 准备连接服务器（需要真实服务器）...');
+    console.log('🧠 AI分析系统已就绪\n');
+    
+    // 实际连接代码（需要真实服务器）:
+    // await client.connect('127.0.0.1', 8080, 1002, 'AIPlayer');
 }
 
 /**
@@ -319,6 +433,7 @@ async function main(): Promise<void> {
     try {
         // 运行所有示例
         await basicNetworkExample();
+        await networkWithBlackboardExample();
         await aiClientExample();
         actionBuilderExample();
         messageParserExample();
@@ -341,6 +456,7 @@ if (import.meta.url.includes('network-example.ts')) {
 
 export {
     basicNetworkExample,
+    networkWithBlackboardExample,
     aiClientExample,
     actionBuilderExample,
     messageParserExample,
