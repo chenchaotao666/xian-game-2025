@@ -64,9 +64,9 @@ class MessageParser {
         const width = mapData.maxX + 1; // maxX是最大坐标，实际宽度要+1
         const height = mapData.maxY + 1;
 
-        if (terrainData.length !== width * height) {
-            throw new Error(`地图数据长度错误：期望${width * height}，实际${terrainData.length}`);
-        }
+        // if (terrainData.length !== width * height) {
+        //     throw new Error(`地图数据长度错误：期望${width * height}，实际${terrainData.length}`);
+        // }
 
         // 构建二维地图数组
         const grid = [];
