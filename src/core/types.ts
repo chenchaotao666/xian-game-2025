@@ -10,7 +10,6 @@
 
 import { Hero } from '../models/heros';
 import { GameMap } from '../context/gameMap';
-import { Soldier } from '..';
 
 /**
  * 全局目标类型枚举
@@ -21,6 +20,14 @@ export enum GlobalGoalType {
   ELIMINATE_ALL_ENEMIES = 'ELIMINATE_ALL_ENEMIES', // 消灭所有敌人
   DEFEND_POINT = 'DEFEND_POINT',         // 防守特定位置
   SURVIVE_TURNS = 'SURVIVE_TURNS',       // 生存指定回合数
+  ATTACK_CITY = 'ATTACK_CITY',           // 攻击城寨
+  ATTACK_ENEMY = 'ATTACK_ENEMY',         // 攻击敌方
+  GATHER_FORCES = 'GATHER_FORCES',       // 集合兵力
+  CAPTURE_FLAG = 'CAPTURE_FLAG',         // 占领龙旗
+  CAPTURE_STRONGHOLD = 'CAPTURE_STRONGHOLD', // 占领据点
+  RESOURCE_MANAGEMENT = 'RESOURCE_MANAGEMENT', // 资源管理
+  BOOST_MORALE = 'BOOST_MORALE',         // 提升士气
+  HIGH_PRIORITY_TARGET = 'HIGH_PRIORITY_TARGET' // 高优先级目标
 }
 
 /**
@@ -40,8 +47,10 @@ export interface GlobalObjective {
   type: GlobalGoalType; // 目标类型
   targetPosition?: Position; // 目标位置 (例如，占领/防守点)
   remainingTurns?: number; // 剩余回合数 (例如，生存目标)
-  priority: number; // 目标优先级 (0.0 - 1.0)，用于多目标时的权衡
+  priority: number; // 目标优先级 (0-100)，用于多目标时的权衡
   id?: string; // 唯一ID，方便管理
+  target?: string; // 目标对象ID（如英雄ID、城寨ID等）
+  description?: string; // 目标描述
 }
 
 /**
@@ -71,10 +80,10 @@ export interface TeamBlackboard {
   getFocusTargetId(): string | undefined;
   setTargetDebuff(targetId: string, debuffType: string, sourceSkill: string, durationTurns: number, currentTurn: number): void;
   getTargetDebuffInfo(targetId: string, debuffType: string, currentTurn: number): { sourceSkill: string, appliedTurn: number, expiresTurn: number } | undefined;
-  addObjective(objective: GlobalObjective): void;
-  removeObjective(objectiveId: string): void;
-  getHighestPriorityObjective(): GlobalObjective | null;
-  getAllObjectives(): GlobalObjective[];
+  setData(key: string, value: any): void;
+  getData(key: string): any;
+  deleteData(key: string): void;
+  hasData(key: string): boolean;
 }
 
 /**

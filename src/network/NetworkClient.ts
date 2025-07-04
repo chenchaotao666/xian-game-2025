@@ -7,6 +7,7 @@ import ProtocolManager from './ProtocolManager';
 import MessageParser from './MessageParser';
 import ActionBuilder from './ActionBuilder';
 import { EventEmitter } from 'events';
+import { TeamBlackboard } from '../core/TeamBlackboard.js';
 
 /**
  * 网络客户端主类
@@ -16,6 +17,7 @@ class NetworkClient extends EventEmitter {
     private protocolManager: any;
     private gameState: any;
     private statistics: any;
+    private teamBlackboard: TeamBlackboard | null = null;  // 可选的TeamBlackboard实例
 
     constructor() {
         super();
@@ -47,6 +49,23 @@ class NetworkClient extends EventEmitter {
 
         // 绑定协议管理器事件
         this.bindProtocolManagerEvents();
+    }
+
+    /**
+     * 设置TeamBlackboard实例以进行数据填充
+     * @param teamBlackboard TeamBlackboard实例
+     */
+    setTeamBlackboard(teamBlackboard: TeamBlackboard): void {
+        this.teamBlackboard = teamBlackboard;
+        console.log('[网络客户端] TeamBlackboard已连接，将自动填充游戏数据');
+    }
+
+    /**
+     * 移除TeamBlackboard连接
+     */
+    removeTeamBlackboard(): void {
+        this.teamBlackboard = null;
+        console.log('[网络客户端] TeamBlackboard连接已断开');
     }
 
     /**
@@ -92,6 +111,16 @@ class NetworkClient extends EventEmitter {
                 
                 this.gameState.currentRound = parsedData.round;
                 this.gameState.lastGameData = parsedData;
+
+                // 如果连接了TeamBlackboard，填充数据
+                if (this.teamBlackboard && this.gameState.playerId) {
+                    try {
+                        this.teamBlackboard.updateGameState(parsedData, this.gameState.playerId);
+                        console.log(`[网络客户端] TeamBlackboard数据已更新 - 回合${parsedData.round}`);
+                    } catch (blackboardError) {
+                        console.error('[网络客户端] TeamBlackboard数据填充失败:', blackboardError);
+                    }
+                }
 
                 this.statistics.messagesReceived++;
                 this.statistics.lastActivity = new Date().toISOString();

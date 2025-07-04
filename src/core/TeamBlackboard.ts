@@ -3,27 +3,229 @@
  * =============
  * 
  * 实现团队成员之间的信息共享机制，包括：
+ * - 全局策略数据管理
  * - 集火目标管理
+ * - 城寨攻击目标管理
+ * - 集合位置管理
  * - Debuff状态追踪
- * - 全局目标管理
- * - 通用数据存储
+ * - 历史目标记录
  * 
  * @author AI游戏框架开发团队
  * @version 1.0.0
  */
 
-import { Hero } from '..';
 import { Agent } from './Agent';
-import { GlobalObjective } from './types';
+import { StrategyType } from './StrategyAnalysis';
+
+/**
+ * 游戏状态接口
+ */
+interface GameStateData {
+  round: number;
+  players: PlayerData[];
+  cityProps: CityData[];
+  stronghold: StrongholdData | null;
+  timestamp: string;
+}
+
+/**
+ * 玩家数据接口
+ */
+interface PlayerData {
+  playerId: number;
+  supplies: number;
+  morale: number;
+  roles: RoleData[];
+  totalLife: number;
+  aliveHeroes: number;
+  totalSoldiers: number;
+}
+
+/**
+ * 英雄数据接口
+ */
+interface RoleData {
+  roleId: number;
+  attack: number;
+  position: { x: number; y: number } | null;
+  life: number;
+  maxLife: number;
+  camp: number;
+  campName: string;
+  reviveRound: number;
+  formationType: number;
+  formationName: string;
+  commander: number;
+  statuses: any;
+  skills: SkillData[];
+  soldiers: SoldierData[];
+  isAlive: boolean;
+  isReviving: boolean;
+  totalSoldierCount: number;
+  healthPercentage: number;
+}
+
+/**
+ * 技能数据接口
+ */
+interface SkillData {
+  skillId: number;
+  cd: number;
+  cdRemainRound: number;
+  damage: number;
+  damageReduceRatio: number;
+  damageAddByAttackRatio: number;
+  roleId: number;
+  isReady: boolean;
+  cooldownProgress: number;
+}
+
+/**
+ * 士兵数据接口
+ */
+interface SoldierData {
+  roleId: number;
+  attack: number;
+  heroId: number;
+  life: number;
+  type: string;
+  typeName: string;
+}
+
+/**
+ * 城寨数据接口
+ */
+interface CityData {
+  roleId: number;
+  position: { x: number; y: number } | null;
+  life: number;
+  maxLife: number;
+  cityType: string;
+  healthPercentage: number;
+}
+
+/**
+ * 据点数据接口
+ */
+interface StrongholdData {
+  roleId: number;
+  camp: number;
+  campName: string;
+  occupiedRound: number[];
+  position: { x: number; y: number } | null;
+  isAvailable: boolean;
+  redOccupiedRounds: number;
+  blueOccupiedRounds: number;
+  totalOccupiedRounds: number;
+}
+
+/**
+ * 集火目标数据
+ */
+interface FocusTargetData {
+  targetId: number;
+  targetType: 'enemy_hero' | 'city' | 'stronghold';
+  priority: number;
+  reason: string;
+  expectedDamage?: number;
+  canEliminate?: boolean;
+  participatingHeroes: number[];
+  setAt: number; // 设置时的回合数
+}
+
+/**
+ * 城寨攻击目标数据
+ */
+interface CityAttackData {
+  cityId: number;
+  cityType: string;
+  position: { x: number; y: number } | null;
+  healthPercentage: number;
+  distance: number;
+  priority: number;
+  safetyScore: number;
+  recommendedHeroes: number[];
+  reason: string;
+  setAt: number;
+}
+
+/**
+ * 敌方攻击目标数据
+ */
+interface EnemyAttackData {
+  targetEnemyId: number;
+  enemyPosition: { x: number; y: number } | null;
+  powerComparison: number;
+  avgDistance: number;
+  priority: number;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  reason: string;
+  setAt: number;
+}
+
+/**
+ * 集合位置数据
+ */
+interface GatherPositionData {
+  position: { x: number; y: number };
+  reason: string;
+  participatingHeroes: number[];
+  estimatedTime: number; // 预计集合所需回合数
+  purpose: string; // 集合目的
+  setAt: number;
+}
+
+/**
+ * 龙旗占领数据
+ */
+interface FlagCaptureData {
+  flagPosition: { x: number; y: number };
+  controlStatus: 'OURS' | 'ENEMY' | 'NEUTRAL';
+  distance: number;
+  risk: number;
+  recommendedHeroes: number[];
+  reason: string;
+  setAt: number;
+}
+
+/**
+ * 历史策略记录
+ */
+interface StrategyHistoryEntry {
+  round: number;
+  strategy: StrategyType;
+  priority: number;
+  confidence: number;
+  reason: string;
+  data: any; // 对应策略的具体数据
+  result?: 'SUCCESS' | 'FAILED' | 'INTERRUPTED'; // 执行结果
+}
 
 /**
  * 团队黑板类
- * 用于团队成员之间共享信息，包括集火目标、debuff状态、战略目标等
- * 实现AI之间的协作和信息同步
+ * 用于团队成员之间共享信息，根据全局策略存储对应的数据
  */
 export class TeamBlackboard {
   private data: Map<string, any> = new Map();              // 通用数据存储
-  private currentObjectives: GlobalObjective[] = [];       // 支持多个目标，按优先级排序
+
+  // 游戏状态数据
+  private gameState: GameStateData | null = null;          // 当前游戏状态
+  private myPlayerId: number | null = null;                // 我方玩家ID
+  private enemyPlayerId: number | null = null;             // 敌方玩家ID
+
+  // 当前策略数据
+  private currentStrategy: StrategyType | null = null;
+  private currentStrategyData: any = null;
+
+  // 策略相关数据存储
+  private focusTarget: FocusTargetData | null = null;      // 当前集火目标
+  private cityAttackTarget: CityAttackData | null = null;  // 当前城寨攻击目标
+  private enemyAttackTarget: EnemyAttackData | null = null; // 当前敌方攻击目标
+  private gatherPosition: GatherPositionData | null = null; // 当前集合位置
+  private flagCaptureTarget: FlagCaptureData | null = null; // 当前龙旗占领目标
+
+  // 历史记录
+  private strategyHistory: StrategyHistoryEntry[] = [];     // 策略历史记录
 
   public warrior: Agent;
   public support: Agent;
@@ -39,25 +241,346 @@ export class TeamBlackboard {
   }
 
   /**
-   * 设置团队集火目标
+   * 填充游戏状态数据
+   * @param gameStateData 从NetworkClient解析的游戏状态数据
+   * @param myPlayerId 我方玩家ID
+   */
+  public updateGameState(gameStateData: GameStateData, myPlayerId: number): void {
+    this.gameState = gameStateData;
+    this.myPlayerId = myPlayerId;
+    
+    // 找到敌方玩家ID
+    this.enemyPlayerId = gameStateData.players.find(p => p.playerId !== myPlayerId)?.playerId || null;
+    
+    console.log(`[团队黑板] 更新游戏状态 - 回合: ${gameStateData.round}, 我方ID: ${myPlayerId}, 敌方ID: ${this.enemyPlayerId}`);
+  }
+
+  /**
+   * 设置全局策略及其对应数据
+   * @param strategy 策略类型
+   * @param data 策略相关数据
+   * @param priority 优先级
+   * @param confidence 置信度
+   * @param reason 理由
+   */
+  public setGlobalStrategy(
+    strategy: StrategyType, 
+    data: any, 
+    priority: number, 
+    confidence: number, 
+    reason: string
+  ): void {
+    const currentRound = this.getCurrentRound();
+    
+    // 如果策略发生变化，记录上一个策略的结果
+    if (this.currentStrategy && this.currentStrategy !== strategy) {
+      this.recordStrategyResult('INTERRUPTED');
+    }
+
+    // 设置新策略
+    this.currentStrategy = strategy;
+    this.currentStrategyData = data;
+
+    // 根据策略类型存储对应数据
+    this.storeStrategyData(strategy, data, currentRound);
+
+    // 记录策略历史
+    this.strategyHistory.push({
+      round: currentRound,
+      strategy,
+      priority,
+      confidence,
+      reason,
+      data
+    });
+
+    // 保持历史记录不超过20条
+    if (this.strategyHistory.length > 20) {
+      this.strategyHistory = this.strategyHistory.slice(-20);
+    }
+
+    console.log(`[团队黑板] 设置全局策略: ${strategy}, 优先级: ${priority}, 置信度: ${confidence}%`);
+    console.log(`[团队黑板] 策略理由: ${reason}`);
+  }
+
+  /**
+   * 根据策略类型存储对应数据
+   */
+  private storeStrategyData(strategy: StrategyType, data: any, round: number): void {
+    switch (strategy) {
+      case StrategyType.FOCUS_FIRE:
+        this.focusTarget = {
+          targetId: data.primaryTargetId,
+          targetType: 'enemy_hero',
+          priority: data.priority,
+          reason: data.reason,
+          expectedDamage: data.expectedDamage,
+          canEliminate: data.canEliminate,
+          participatingHeroes: data.secondaryTargets || [],
+          setAt: round
+        };
+        break;
+
+      case StrategyType.ATTACK_CITY:
+        this.cityAttackTarget = {
+          cityId: data.cityId,
+          cityType: data.cityType,
+          position: data.position,
+          healthPercentage: data.healthPercentage,
+          distance: data.distance?.realDistance || 0,
+          priority: data.attackPriority,
+          safetyScore: data.safetyScore,
+          recommendedHeroes: data.recommendedHeroes,
+          reason: data.reason,
+          setAt: round
+        };
+        break;
+
+      case StrategyType.ATTACK_ENEMY:
+        this.enemyAttackTarget = {
+          targetEnemyId: data.targetEnemyId,
+          enemyPosition: data.enemyPosition,
+          powerComparison: data.powerComparison,
+          avgDistance: data.avgDistance,
+          priority: data.priority,
+          riskLevel: data.riskLevel,
+          reason: data.reason,
+          setAt: round
+        };
+        break;
+
+      case StrategyType.GATHER_FORCES:
+        this.gatherPosition = {
+          position: data.gatherPosition,
+          reason: data.reason,
+          participatingHeroes: this.getMyAliveHeroes().map(h => h.roleId),
+          estimatedTime: data.estimatedTime || 3,
+          purpose: data.purpose || '集合后攻击敌方',
+          setAt: round
+        };
+        break;
+
+      case StrategyType.CAPTURE_FLAG:
+        this.flagCaptureTarget = {
+          flagPosition: data.position || { x: 8, y: 8 },
+          controlStatus: data.controlStatus,
+          distance: data.distance?.realDistance || 0,
+          risk: data.risk,
+          recommendedHeroes: data.recommendedHeroes,
+          reason: data.reason,
+          setAt: round
+        };
+        break;
+    }
+  }
+
+  /**
+   * 记录策略执行结果
+   */
+  public recordStrategyResult(result: 'SUCCESS' | 'FAILED' | 'INTERRUPTED'): void {
+    if (this.strategyHistory.length > 0) {
+      const lastEntry = this.strategyHistory[this.strategyHistory.length - 1];
+      if (!lastEntry.result) {
+        lastEntry.result = result;
+        console.log(`[团队黑板] 策略 ${lastEntry.strategy} 执行结果: ${result}`);
+      }
+    }
+  }
+
+  /**
+   * 获取当前策略
+   */
+  public getCurrentStrategy(): StrategyType | null {
+    return this.currentStrategy;
+  }
+
+  /**
+   * 获取当前策略数据
+   */
+  public getCurrentStrategyData(): any {
+    return this.currentStrategyData;
+  }
+
+  /**
+   * 获取集火目标
+   */
+  public getFocusTarget(): FocusTargetData | null {
+    return this.focusTarget;
+  }
+
+  /**
+   * 获取城寨攻击目标
+   */
+  public getCityAttackTarget(): CityAttackData | null {
+    return this.cityAttackTarget;
+  }
+
+  /**
+   * 获取敌方攻击目标
+   */
+  public getEnemyAttackTarget(): EnemyAttackData | null {
+    return this.enemyAttackTarget;
+  }
+
+  /**
+   * 获取集合位置
+   */
+  public getGatherPosition(): GatherPositionData | null {
+    return this.gatherPosition;
+  }
+
+  /**
+   * 获取龙旗占领目标
+   */
+  public getFlagCaptureTarget(): FlagCaptureData | null {
+    return this.flagCaptureTarget;
+  }
+
+  /**
+   * 获取策略历史记录
+   */
+  public getStrategyHistory(): StrategyHistoryEntry[] {
+    return [...this.strategyHistory];
+  }
+
+  /**
+   * 获取最近N个策略记录
+   */
+  public getRecentStrategyHistory(count: number = 5): StrategyHistoryEntry[] {
+    return this.strategyHistory.slice(-count);
+  }
+
+  /**
+   * 清除指定策略的数据
+   */
+  public clearStrategyData(strategy: StrategyType): void {
+    switch (strategy) {
+      case StrategyType.FOCUS_FIRE:
+        this.focusTarget = null;
+        break;
+      case StrategyType.ATTACK_CITY:
+        this.cityAttackTarget = null;
+        break;
+      case StrategyType.ATTACK_ENEMY:
+        this.enemyAttackTarget = null;
+        break;
+      case StrategyType.GATHER_FORCES:
+        this.gatherPosition = null;
+        break;
+      case StrategyType.CAPTURE_FLAG:
+        this.flagCaptureTarget = null;
+        break;
+    }
+    console.log(`[团队黑板] 清除策略数据: ${strategy}`);
+  }
+
+  /**
+   * 获取当前游戏回合数
+   */
+  public getCurrentRound(): number {
+    return this.gameState?.round || 0;
+  }
+
+  /**
+   * 获取我方玩家数据
+   */
+  public getMyPlayerData(): PlayerData | null {
+    if (!this.gameState || !this.myPlayerId) return null;
+    return this.gameState.players.find(p => p.playerId === this.myPlayerId) || null;
+  }
+
+  /**
+   * 获取敌方玩家数据
+   */
+  public getEnemyPlayerData(): PlayerData | null {
+    if (!this.gameState || !this.enemyPlayerId) return null;
+    return this.gameState.players.find(p => p.playerId === this.enemyPlayerId) || null;
+  }
+
+  /**
+   * 获取我方所有英雄
+   */
+  public getMyHeroes(): RoleData[] {
+    const myPlayer = this.getMyPlayerData();
+    return myPlayer?.roles || [];
+  }
+
+  /**
+   * 获取敌方所有英雄
+   */
+  public getEnemyHeroes(): RoleData[] {
+    const enemyPlayer = this.getEnemyPlayerData();
+    return enemyPlayer?.roles || [];
+  }
+
+  /**
+   * 获取我方存活英雄
+   */
+  public getMyAliveHeroes(): RoleData[] {
+    return this.getMyHeroes().filter(hero => hero.isAlive);
+  }
+
+  /**
+   * 获取敌方存活英雄
+   */
+  public getEnemyAliveHeroes(): RoleData[] {
+    return this.getEnemyHeroes().filter(hero => hero.isAlive);
+  }
+
+  /**
+   * 根据ID获取英雄数据
+   */
+  public getHeroById(heroId: number): RoleData | null {
+    if (!this.gameState) return null;
+    
+    for (const player of this.gameState.players) {
+      const hero = player.roles.find(role => role.roleId === heroId);
+      if (hero) return hero;
+    }
+    return null;
+  }
+
+  /**
+   * 获取城寨数据
+   */
+  public getCities(): CityData[] {
+    return this.gameState?.cityProps || [];
+  }
+
+  /**
+   * 获取据点数据
+   */
+  public getStronghold(): StrongholdData | null {
+    return this.gameState?.stronghold || null;
+  }
+
+  /**
+   * 获取当前游戏状态快照
+   */
+  public getGameStateSnapshot(): GameStateData | null {
+    return this.gameState;
+  }
+
+  /**
+   * 设置团队集火目标（兼容旧接口）
    * @param targetId 目标ID，null表示取消集火
    */
   public setFocusTarget(targetId: string | null): void {
-    if (targetId) {
-      this.data.set('teamFocusTargetId', targetId);
-      console.log(`[团队黑板]: 新的集火目标 ${targetId}`);
-    } else {
-      this.data.delete('teamFocusTargetId');
+    if (targetId && this.focusTarget) {
+      this.focusTarget.targetId = parseInt(targetId);
+      console.log(`[团队黑板]: 更新集火目标 ${targetId}`);
+    } else if (!targetId) {
+      this.focusTarget = null;
       console.log(`[团队黑板]: 取消集火目标`);
     }
   }
 
   /**
-   * 获取当前集火目标ID
+   * 获取当前集火目标ID（兼容旧接口）
    * @returns 目标ID或undefined
    */
   public getFocusTargetId(): string | undefined {
-    return this.data.get('teamFocusTargetId');
+    return this.focusTarget?.targetId.toString();
   }
 
   /**
@@ -73,7 +596,7 @@ export class TeamBlackboard {
     this.data.set(key, {
       sourceSkill,
       appliedTurn: currentTurn,
-      expiresTurn: currentTurn + durationTurns - 1 // 如果持续1回合，则在当前回合结束时就没了
+      expiresTurn: currentTurn + durationTurns - 1
     });
     console.log(`[团队黑板]: 目标 ${targetId} 获得debuff "${debuffType}" (来自: ${sourceSkill}, 持续到回合结束: ${currentTurn + durationTurns - 1})`);
   }
@@ -103,41 +626,37 @@ export class TeamBlackboard {
   }
 
   /**
-   * 添加全局目标
-   * @param objective 目标对象
+   * 设置黑板数据
+   * @param key 数据键
+   * @param value 数据值
    */
-  public addObjective(objective: GlobalObjective): void {
-    this.currentObjectives.push(objective);
-    // 按优先级降序排序
-    this.currentObjectives.sort((a, b) => b.priority - a.priority);
-    console.log(`[团队黑板]: 添加目标 "${objective.type}" (优先级: ${objective.priority}, ID: ${objective.id})`);
+  public setData(key: string, value: any): void {
+    this.data.set(key, value);
   }
 
   /**
-   * 移除指定的全局目标
-   * @param objectiveId 目标ID
+   * 获取黑板数据
+   * @param key 数据键
+   * @returns 数据值或undefined
    */
-  public removeObjective(objectiveId: string): void {
-    const beforeLength = this.currentObjectives.length;
-    this.currentObjectives = this.currentObjectives.filter(obj => obj.id !== objectiveId);
-    if (this.currentObjectives.length < beforeLength) {
-      console.log(`[团队黑板]: 移除目标 ID: ${objectiveId}`);
-    }
+  public getData(key: string): any {
+    return this.data.get(key);
   }
 
   /**
-   * 获取最高优先级的目标
-   * @returns 最高优先级目标或null
+   * 删除黑板数据
+   * @param key 数据键
    */
-  public getHighestPriorityObjective(): GlobalObjective | null {
-    return this.currentObjectives.length > 0 ? this.currentObjectives[0] : null;
+  public deleteData(key: string): void {
+    this.data.delete(key);
   }
 
   /**
-   * 获取所有当前目标
-   * @returns 目标数组（按优先级排序）
+   * 检查黑板是否包含指定数据
+   * @param key 数据键
+   * @returns 是否包含
    */
-  public getAllObjectives(): GlobalObjective[] {
-    return [...this.currentObjectives];
+  public hasData(key: string): boolean {
+    return this.data.has(key);
   }
 } 

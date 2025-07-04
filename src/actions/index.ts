@@ -1,4 +1,5 @@
 // 行为树动作类导出
+export { AnalyzeAndSetStrategy } from './AnalyzeAndSetStrategy';
 export { ExecuteEscape } from './ExecuteEscape';
 export { ExecuteCapture } from './ExecuteCapture';
 export { ExecutePreparation } from './ExecutePreparation';
