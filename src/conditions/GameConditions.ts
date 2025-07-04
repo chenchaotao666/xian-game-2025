@@ -1,4 +1,4 @@
-import { ActionContext } from '../core/types';
+import { ActionContext, Position } from '../core/types';
 
 /**
  * 游戏状态相关条件
@@ -11,7 +11,7 @@ import { ActionContext } from '../core/types';
  * 检查是否需要选择武将
  * 第1回合或武将复活前1回合可以选择武将
  */
-export function shouldPickGeneral(context: ActionContext): boolean {
+export function ShouldPickGenerals(context: ActionContext): boolean {
   const { agent } = context;
   
   // 第1回合需要选择武将
@@ -40,6 +40,79 @@ export function canChooseBuff(context: ActionContext): boolean {
   return agent.currentTurn > 0 && agent.currentTurn % 100 === 0;
 }
 
+
+/**
+ * 检查是否需要更多士兵
+ * 根据统帅值和当前兵力判断
+ */
+export function NeedMoreTroops(context: ActionContext): boolean {
+  const { agent } = context;
+  
+  // 检查当前兵力是否达到统帅上限
+  const troops = (agent as any).troops;
+  const generalStats = (agent as any).generalStats;
+  
+  if (!troops || !generalStats) {
+    return true; // 没有兵力信息时默认需要
+  }
+  
+  const currentTroops = troops.length;
+  const maxTroops = generalStats.leadership; // 统帅值决定带兵上限
+  
+  // 如果当前兵力少于统帅上限的80%，则需要补充
+  return currentTroops < maxTroops * 0.8;
+}
+
+/**
+ * 检查是否应该切换阵型
+ * 根据当前局势和兵力数量判断
+ */
+export function ShouldChangeFormation(context: ActionContext): boolean {
+  const { agent } = context;
+  
+  // 检查是否有足够的士气和粮草切换阵型
+  const morale = (agent as any).morale || 0;
+  const food = (agent as any).food || 0;
+  
+  if (morale < 50 || food < 100) {
+    return false;
+  }
+  
+  // 检查当前兵力数量是否适合使用阵型
+  const troops = (agent as any).troops;
+  const currentTroops = troops?.length || 0;
+  if (currentTroops < 5) {
+    return false; // 兵力太少不值得用阵型
+  }
+  
+  // 如果附近敌人较多，考虑切换到防御阵型
+  
+  // 如果准备攻击，考虑切换到攻击阵型
+  
+  return false;
+}
+
+
+/**
+ * 龙旗占领能力检查条件
+ * 检查是否有能力占领龙旗据点：兵力充足、位置合适
+ */
+export function canCaptureDragonFlag(context: ActionContext): boolean {
+  const { agent, gameMap } = context;
+  
+  // 假设龙旗据点位置（通常在地图中央）
+  const dragonFlagPosition: Position = { 
+    x: Math.floor(gameMap.width / 2), 
+    y: Math.floor(gameMap.height / 2) 
+  };
+  
+  // 检查是否在龙旗据点附近（距离3格内）
+  const distanceToFlag = Math.abs(agent.position.x - dragonFlagPosition.x) + 
+                        Math.abs(agent.position.y - dragonFlagPosition.y);
+  const isNearFlag = distanceToFlag <= 3;
+  
+  return isNearFlag 
+}
 /**
  * 检查是否可以使用技能
  * 根据技能冷却时间判断

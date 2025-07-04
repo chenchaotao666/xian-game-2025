@@ -5,7 +5,7 @@ export { ExecutePreparation } from './ExecutePreparation';
 export { ExecuteAttack } from './ExecuteAttack';
 
 // 游戏状态相关动作
-export { executePickGeneral, executeChooseBuff, executeSkill, executeEscapeSkill, executeTeleport } from './GameStateActions';
+export { ExecutePickGenerals as executePickGeneral, ExecuteChooseBuff as executeChooseBuff, executeSkill, executeEscapeSkill, executeTeleport } from './GameStateActions';
 
 // 战略动作
 export { executeProduceTroops, executeFormationChange, executeAttackFortress, executeIdle, executeDevelopment } from './StrategicActions';

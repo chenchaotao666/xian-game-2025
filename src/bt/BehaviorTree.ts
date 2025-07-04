@@ -8,117 +8,109 @@
  * @version 2.0.0
  */
 
-export class BehaviorTreeBuilder {
-  static buildTree(): string {
-    return `root {
-    selector {
-        /* 武将复活和选择 - 最高优先级 */
-        sequence {
-            condition [ShouldPickGeneral]
-            action [ExecutePickGeneral]
-        }
-        
-        /* BUFF选择时机 */
-        sequence {
-            condition [CanChooseBuff]
-            action [ExecuteChooseBuff]
-        }
-        
-        /* 紧急情况处理 */
-        sequence {
-            condition [IsInDanger]
-            selector {
-                sequence {
-                    condition [CanUseEscapeSkill]
-                    action [ExecuteEscapeSkill]
-                }
-                sequence {
-                    condition [CanTeleport]
-                    action [ExecuteTeleport]
-                }
-                action [ExecuteEscape]
+export const teamBehaviorTree = `root {
+  sequence {
+      /* === 综合战略决策 （发育、团战、抢龙旗） === */
+      action [AnalyzeAndSetStrategy]
+
+      selector {
+            /* 武将选择 */
+            sequence {
+                condition [ShouldPickGenerals]
+                action [ExecutePickGenerals]
             }
-        }
-        
-        /* 游戏后期 - 龙旗据点争夺（100回合后）*/
-        sequence {
-            condition [IsDragonFlagOpen]
-            selector {
-                /* 占领龙旗据点 */
+
+            /* === 执行全局操作 === */
+            parallel {
+                /* BUFF选择 */
                 sequence {
-                    condition [CanCaptureDragonFlag]
-                    action [ExecuteCapture]
+                    condition [CanChooseBuff]
+                    action [ExecuteChooseBuff]
                 }
                 
-                /* 准备占领 - 集结兵力和调整阵型 */
-                sequence {
-                    condition [ShouldPrepareForCapture]
-                    selector {
-                        sequence {
-                            condition [ShouldChangeFormation]
-                            action [ExecuteFormationChange]
-                        }
-                        sequence {
-                            condition [NeedMoreTroops]
-                            action [ExecuteProduceTroops]
-                        }
-                        action [ExecutePreparation]
-                    }
-                }
-                
-                /* 骚扰敌人占领 */
-                sequence {
-                    condition [EnemyCapturingFlag]
-                    selector {
-                        sequence {
-                            condition [CanUseSkill]
-                            action [ExecuteSkill]
-                        }
-                        action [ExecuteAttack]
-                    }
-                }
-                
-                /* 发育等待机会 */
-                action [ExecuteDevelopment]
-            }
-        }
-        
-        /* 游戏前期策略（100回合前）*/
-        sequence {
-            condition [IsEarlyGame]
-            selector {
                 /* 生产士兵 */
                 sequence {
                     condition [NeedMoreTroops]
-                    action [ExecuteProduceTroops]
+                    action [ExecuteTroopProduction]
                 }
                 
-                /* 攻击敌方武将获取粮草 */
+                /* 阵型调整 */
                 sequence {
-                    condition [ShouldAttackEnemy]
-                    selector {
-                        sequence {
-                            condition [CanUseSkill]
-                            action [ExecuteSkill]
-                        }
-                        action [ExecuteAttack]
-                    }
+                    condition [ShouldChangeFormation]
+                    action [ExecuteFormationChange]
                 }
                 
-                /* 攻打城寨获取粮草 */
+                /* 占领据点 */
                 sequence {
-                    condition [ShouldAttackFortress]
-                    action [ExecuteAttackFortress]
+                    condition [CanCaptureDragonFlag]
+                    action [ExecuteCaptureFlag]
                 }
-                
-                /* 默认发育 */
-                action [ExecuteDevelopment]
+            }
+        }
+      
+      /* === 第三步：根据策略分配武将任务 === */
+      action [AssignHeroRoles]
+      
+      /* === 第四步：执行武将行动 === */
+      parallel {
+          action [ExecuteHero0Actions]
+          action [ExecuteHero1Actions] 
+          action [ExecuteHero2Actions]
+      }
+  }
+}`
+
+export const heroBehaviorTree = `root  /* 紧急逃生 */
+    sequence {
+        condition [IsInCriticalDanger]
+        action [ExecuteEmergencyEscape]
+    }
+    
+    /* 基于策略的行为 */
+    selector {
+        /* 撤退策略 */
+        sequence {
+            condition [ShouldRetreat]
+            action [ExecuteRetreat]
+        }
+        
+        /* 争夺据点策略 */
+        sequence {
+            condition [ShouldGroupUp]
+            selector {
+                sequence {
+                    condition [IsNearDragonFlag]
+                    action [ExecuteFlagBattle]
+                }
+                action [ExecuteMoveToFlag]
             }
         }
         
-        /* 兜底行为 */
-        action [ExecuteIdle]
+        /* 主动攻击策略 */
+        sequence {
+            condition [ShouldSeekEnemy]
+            selector {
+                sequence {
+                    condition [HasEnemyInRange]
+                    action [ExecuteAttackEnemy]
+                }
+                action [ExecuteSeekEnemy]
+            }
+        }
+        
+        /* 刷城寨策略 */
+        sequence {
+            condition [ShouldAttackFortress]
+            selector {
+                sequence {
+                    condition [HasFortressInRange]
+                    action [ExecuteAttackFortress]
+                }
+                action [ExecuteSeekFortress]
+            }
+        }
+        
+        /* 默认防守 */
+        action [ExecuteDefend]
     }
-}`;
-  }
-} 
+}`

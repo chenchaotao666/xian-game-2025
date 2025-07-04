@@ -10,6 +10,16 @@ import { ACTION_TYPES, FORMATION_TYPES, SOLDIER_TYPES } from './ProtocolManager'
  * 负责构建符合协议格式的各种游戏行动指令
  */
 class ActionBuilder {
+
+    static actionsToSend: any[] = [];
+
+    static clearActions() {
+        this.actionsToSend = [];
+    }
+
+    static addAction(action: any) {
+        this.actionsToSend.push(action);
+    }
     
     /**
      * 构建普通移动指令
@@ -22,14 +32,14 @@ class ActionBuilder {
             throw new Error('构建移动指令参数错误：需要roleId和有效的position{x, y}');
         }
 
-        return {
+        this.addAction({
             roleId: roleId,
             action: ACTION_TYPES.MOVE,
             position: {
                 x: position.x,
                 y: position.y
             }
-        };
+        });
     }
 
     /**
@@ -43,14 +53,14 @@ class ActionBuilder {
             throw new Error('构建传送指令参数错误：需要roleId和有效的position{x, y}');
         }
 
-        return {
+        this.addAction({
             roleId: roleId,
             action: ACTION_TYPES.SP,
             position: {
                 x: position.x,
                 y: position.y
             }
-        };
+        });
     }
 
     /**
@@ -75,11 +85,11 @@ class ActionBuilder {
             }
         }
 
-        return {
+        this.addAction({
             action: ACTION_TYPES.PICK,
             roles: heroIds,
             playerId: playerId
-        };
+        });
     }
 
     /**
@@ -107,13 +117,13 @@ class ActionBuilder {
             }
         }
 
-        return {
+        this.addAction({
             action: ACTION_TYPES.MAKE,
             details: productionDetails.map(detail => ({
                 roleId: detail.roleId,
                 solders: detail.soldiers // 注意协议中使用的是'solders'
             }))
-        };
+        });
     }
 
     /**
@@ -127,11 +137,11 @@ class ActionBuilder {
             throw new Error('构建阵型指令参数错误：需要roleId和有效的阵型类型(1攻击/2防守)');
         }
 
-        return {
+        this.addAction({
             roleId: roleId,
             action: ACTION_TYPES.FORM,
             formationType: formationType
-        };
+        });
     }
 
     /**
@@ -140,7 +150,7 @@ class ActionBuilder {
      * @param {number} [roleId] - 当buffType为1001时需要指定的英雄ID
      * @returns {Object} 获取buff行动指令
      */
-    static buildBuffAction(buffType, roleId = null) {
+    static buildBuffAction(buffType: number, roleId: number | null = null) {
         if (typeof buffType !== 'number') {
             throw new Error('构建buff指令参数错误：buffType必须是数字');
         }
@@ -158,7 +168,7 @@ class ActionBuilder {
             action.roleId = roleId;
         }
 
-        return action;
+        this.addAction(action);
     }
 
     /**
@@ -166,9 +176,9 @@ class ActionBuilder {
      * @returns {Object} 占领据点行动指令
      */
     static buildOccupyAction() {
-        return {
+        this.addAction({
             action: ACTION_TYPES.AC
-        };
+        });
     }
 
     /**
@@ -182,14 +192,14 @@ class ActionBuilder {
             throw new Error('构建攻城指令参数错误：需要roleId和有效的position{x, y}');
         }
 
-        return {
+        this.addAction({
             roleId: roleId,
             action: ACTION_TYPES.SG,
             position: {
                 x: position.x,
                 y: position.y
             }
-        };
+        });
     }
 
     /**
@@ -203,14 +213,14 @@ class ActionBuilder {
             throw new Error('构建攻击指令参数错误：需要roleId和有效的position{x, y}');
         }
 
-        return {
+        this.addAction({
             roleId: roleId,
             action: ACTION_TYPES.AD,
             position: {
                 x: position.x,
                 y: position.y
             }
-        };
+        });
     }
 
     /**
@@ -257,7 +267,7 @@ class ActionBuilder {
             };
         }
 
-        return action;
+        this.addAction(action);
     }
 
     /**
