@@ -1,10 +1,11 @@
-import { GameMap } from "@/types";
+import { GameMap, GameState } from "@/types";
 import { BehaviorTreeController } from "../bt/BehaviorTreeController";
 import { ActionContext, IAgent } from "./types";
 import { Agent } from "./Agent";
 import { sunquan, zhaoyun, zhugeliang } from "@/models/heros";
 import ActionBuilder from "@/network/ActionBuilder";
 import { TeamBlackboard } from "./TeamBlackboard";
+import NetworkClient from "../network/NetworkClient";
 
 const context: ActionContext = {
     agent: null,
@@ -14,7 +15,7 @@ const context: ActionContext = {
     debug: false
 }
 
-export function init(playerId: number) {
+export function init(client: NetworkClient, playerId: number) {
     // 选择武将
     pickGenerals(playerId);
     // 创建团队黑板
@@ -26,6 +27,8 @@ export function init(playerId: number) {
     teamBlackboard.setTeam(warrior, support, leader);
     // 初始化上下文
     context.teamBlackboard = teamBlackboard;
+    // 关联网络客户端，让网络客户端可以更新团队黑板的数据
+    client.setTeamBlackboard(teamBlackboard);
 }
 
 

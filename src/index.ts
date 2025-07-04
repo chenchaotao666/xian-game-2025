@@ -24,12 +24,6 @@ const config: GameConfig = {
     playerId: parseInt(process.env.PLAYER_ID || '8680'),
     playerName: process.env.PLAYER_NAME || 'Player',
 
-    // 游戏模式配置
-    gameMode: (process.env.GAME_MODE as 'human' | 'ai') || 'ai',
-    aiDifficulty: (process.env.AI_DIFFICULTY as 'easy' | 'normal' | 'hard' | 'expert') || 'normal',
-
-    // 其他配置
-    autoReconnect: process.env.AUTO_RECONNECT === 'true',
     logLevel: (process.env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info'
 };
 
