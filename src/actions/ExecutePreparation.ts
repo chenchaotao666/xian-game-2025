@@ -68,12 +68,6 @@ function performPreparation(context: ActionContext): void {
     return;
   }
 
-  if (agent.mana < 60 && agent.isSkillReady('mana_recovery_skill')) {
-    agent.performSelfSkill('mana_recovery_skill');
-    agent.log(`段颖使用法力恢复技能，恢复法力准备占领`);
-    return;
-  }
-
   // 检查是否有buff技能可以使用
   if (agent.isSkillReady('strength_buff')) {
     agent.performSelfSkill('strength_buff');

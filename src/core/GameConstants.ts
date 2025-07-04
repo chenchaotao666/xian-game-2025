@@ -590,4 +590,13 @@ export function getPositionsInRange(center: Position, radius: number): Position[
     }
     
     return positions;
-} 
+}
+
+// ========== 武将类型常量 ==========
+
+/** 武将类型常量 - 为了向后兼容性 */
+export const GENERAL_TYPES = {
+    WARRIOR: 'warrior' as HeroCategory,
+    COMMANDER: 'commander' as HeroCategory,
+    STRATEGIST: 'strategist' as HeroCategory
+} as const; 

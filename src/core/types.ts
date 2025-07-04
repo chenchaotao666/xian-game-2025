@@ -8,7 +8,9 @@
  * @version 1.0.0
  */
 
+import { Hero } from '../models/heros';
 import { GameMap } from '../context/gameMap';
+import { Soldier } from '..';
 
 /**
  * 全局目标类型枚举
@@ -83,6 +85,11 @@ export interface IAgent {
   position: Position;            // 当前位置坐标
   teamId: string;                // 所属队伍ID
   movementRange: number;         // 每回合最大移动范围/点数
+  hero: Hero;                    // 武将
+  // 弓兵数量
+  bowmen: number;                // 弓兵数量
+  // 盾兵数量
+  shieldmen: number;             // 盾兵数量
 
   // === 感知与状态 ===
   visibleEnemies: IAgent[];      // 可见的敌方代理列表
@@ -116,6 +123,7 @@ export interface IAgent {
  * 行为上下文接口
  */
 export interface ActionContext {
+  playerId: number;                          // 玩家ID
   agent: IAgent;                              // 执行行为的代理（或其模拟状态）
   gameMap: GameMap;                           // 方便动作和考量因素访问地图信息
   potentialTarget?: IAgentState;              // 行为的潜在目标（或其模拟状态）

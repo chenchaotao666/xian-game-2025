@@ -3,7 +3,9 @@ export { ExecuteEscape } from './ExecuteEscape';
 export { ExecuteCapture } from './ExecuteCapture';
 export { ExecutePreparation } from './ExecutePreparation';
 export { ExecuteAttack } from './ExecuteAttack';
-export { ExecuteDevelopment } from './ExecuteDevelopment';
 
-// 原有动作类
-export { AttackAction } from './AttackAction';
+// 游戏状态相关动作
+export { executePickGeneral, executeChooseBuff, executeSkill, executeEscapeSkill, executeTeleport } from './GameStateActions';
+
+// 战略动作
+export { executeProduceTroops, executeFormationChange, executeAttackFortress, executeIdle, executeDevelopment } from './StrategicActions';

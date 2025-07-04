@@ -6,10 +6,8 @@ import { ActionContext } from '../core/types';
  */
 export function isMidGame(context: ActionContext): boolean {
   const { agent } = context;
-  
-  // 定义中期游戏的回合范围
-  const midGameStartTurn = 30;
+
   const midGameEndTurn = 100;
-  
-  return agent.currentTurn >= midGameStartTurn && agent.currentTurn < midGameEndTurn;
+
+  return agent.currentTurn < midGameEndTurn;
 } 

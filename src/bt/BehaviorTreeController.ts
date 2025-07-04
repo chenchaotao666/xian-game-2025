@@ -62,7 +62,7 @@ export class BehaviorTreeController{
 
     try {
       // 更新感知信息
-      this.updatePerception();
+      this.updateInfo();
 
       // 执行行为树
       const result = this.behaviorTree.step();
@@ -81,6 +81,7 @@ export class BehaviorTreeController{
         this.behaviorTree.reset();
       }
 
+      return result;
     } catch (error) {
       this.log(`行为树执行出错: ${error}`);
       // 发生错误时重置行为树
@@ -95,7 +96,7 @@ export class BehaviorTreeController{
   /**
    * 更新代理的感知信息
    */
-  private updatePerception(): void {
+  private updateInfo(): void {
     const agent = this.behaviorTreeAgent.agent;
     const allAgents = this.behaviorTreeAgent.allAgents;
     const gameMap = this.behaviorTreeAgent.gameMap;

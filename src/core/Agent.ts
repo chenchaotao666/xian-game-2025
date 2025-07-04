@@ -12,6 +12,7 @@ import { GameMap } from '../context/gameMap';
 import { IAgent, IAgentState, Position, ActionContext } from './types';
 import { TeamBlackboard } from './TeamBlackboard';
 import { Hero } from '../models/heros';
+import { Soldier } from '..';
 
 /**
  * 游戏代理实现类
@@ -25,7 +26,10 @@ import { Hero } from '../models/heros';
 export class Agent implements IAgent {
   id: number;
   health: number;
-  hero: Hero;
+  // 盾兵数量
+  shieldmen: number = 0;
+  // 弓兵数量
+  bowmen: number = 0;
   position: { x: number; y: number };
   teamId: string;
   teamBlackboard: TeamBlackboard;
@@ -46,7 +50,7 @@ export class Agent implements IAgent {
    * @param movementRange 移动范围
    */
   constructor(
-    hero: Hero,
+    public hero: Hero,
     position: Position,
     teamId: string, teamBlackboard: TeamBlackboard, movementRange: number = 3,
   ) {
@@ -56,6 +60,14 @@ export class Agent implements IAgent {
     this.teamId = teamId;
     this.teamBlackboard = teamBlackboard;
     this.movementRange = movementRange;
+  }
+
+  getAttack(): number {
+    return this.hero.attack + this.bowmen * 25 + this.shieldmen * 20;
+  }
+
+  getDefense(): number {
+    return this.hero.health + this.bowmen * 20 + this.shieldmen * 25;
   }
 
   /**

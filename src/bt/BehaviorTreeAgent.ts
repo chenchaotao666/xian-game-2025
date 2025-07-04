@@ -35,6 +35,19 @@ interface IBehaviorTreeNodes {
   IsEarlyGame(): boolean;
   HasEnemyInRange(): boolean;
   
+  // 新增的游戏状态条件
+  ShouldPickGeneral(): boolean;
+  CanChooseBuff(): boolean;
+  CanUseSkill(): boolean;
+  CanUseEscapeSkill(): boolean;
+  CanTeleport(): boolean;
+  
+  // 新增的战略条件
+  NeedMoreTroops(): boolean;
+  ShouldChangeFormation(): boolean;
+  HasEnoughFood(): boolean;
+  ShouldPrioritizeDevelopment(): boolean;
+  
   // 动作方法 (返回State)
   ExecuteEscape(): State;
   ExecuteCapture(): State;
@@ -42,6 +55,19 @@ interface IBehaviorTreeNodes {
   ExecuteAttack(): State;
   ExecuteDevelopment(): State;
   AttackAction(): State;
+  
+  // 新增的游戏状态动作
+  ExecutePickGeneral(): State;
+  ExecuteChooseBuff(): State;
+  ExecuteSkill(): State;
+  ExecuteEscapeSkill(): State;
+  ExecuteTeleport(): State;
+  
+  // 新增的战略动作
+  ExecuteProduceTroops(): State;
+  ExecuteFormationChange(): State;
+  ExecuteAttackFortress(): State;
+  ExecuteIdle(): State;
 }
 
 /**
@@ -119,12 +145,38 @@ export class BehaviorTreeAgent implements IBehaviorTreeNodes {
   IsEarlyGame!: () => boolean;
   HasEnemyInRange!: () => boolean;
   
+  // 新增的游戏状态条件
+  ShouldPickGeneral!: () => boolean;
+  CanChooseBuff!: () => boolean;
+  CanUseSkill!: () => boolean;
+  CanUseEscapeSkill!: () => boolean;
+  CanTeleport!: () => boolean;
+  
+  // 新增的战略条件
+  NeedMoreTroops!: () => boolean;
+  ShouldChangeFormation!: () => boolean;
+  HasEnoughFood!: () => boolean;
+  ShouldPrioritizeDevelopment!: () => boolean;
+  
   ExecuteEscape!: () => State;
   ExecuteCapture!: () => State;
   ExecutePreparation!: () => State;
   ExecuteAttack!: () => State;
   ExecuteDevelopment!: () => State;
   AttackAction!: () => State;
+  
+  // 新增的游戏状态动作
+  ExecutePickGeneral!: () => State;
+  ExecuteChooseBuff!: () => State;
+  ExecuteSkill!: () => State;
+  ExecuteEscapeSkill!: () => State;
+  ExecuteTeleport!: () => State;
+  
+  // 新增的战略动作
+  ExecuteProduceTroops!: () => State;
+  ExecuteFormationChange!: () => State;
+  ExecuteAttackFortress!: () => State;
+  ExecuteIdle!: () => State;
 
   // ============== 辅助方法 ==============
 

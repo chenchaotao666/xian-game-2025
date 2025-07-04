@@ -12,6 +12,8 @@
  * @version 1.0.0
  */
 
+import { Hero } from '..';
+import { Agent } from './Agent';
 import { GlobalObjective } from './types';
 
 /**
@@ -22,6 +24,19 @@ import { GlobalObjective } from './types';
 export class TeamBlackboard {
   private data: Map<string, any> = new Map();              // 通用数据存储
   private currentObjectives: GlobalObjective[] = [];       // 支持多个目标，按优先级排序
+
+  private warrior: Agent;
+  private support: Agent;
+  private leader: Agent;
+
+  constructor(public food: number) {
+  }
+
+  setTeam(warrior: Agent, support: Agent, leader: Agent) {
+    this.warrior = warrior;
+    this.support = support;
+    this.leader = leader;
+  }
 
   /**
    * 设置团队集火目标
