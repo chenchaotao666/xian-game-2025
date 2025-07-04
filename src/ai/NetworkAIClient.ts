@@ -327,7 +327,7 @@ class NetworkAIClient {
 
                 switch (decision.type) {
                     case 'PICK':
-                        action = ActionBuilder.buildPickAction(decision.heroIds);
+                        action = ActionBuilder.buildPickAction(decision.heroIds, this.networkClient.getGameState().playerId);
                         break;
                     
                     case 'MAKE':

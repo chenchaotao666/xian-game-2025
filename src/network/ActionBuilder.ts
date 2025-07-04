@@ -56,11 +56,16 @@ class ActionBuilder {
     /**
      * 构建选择阵容指令
      * @param {Array<number>} heroIds - 要选择的英雄ID数组，必须是3个
+     * @param {number} playerId - 玩家ID
      * @returns {Object} 选择阵容行动指令
      */
-    static buildPickAction(heroIds) {
+    static buildPickAction(heroIds, playerId) {
         if (!Array.isArray(heroIds) || heroIds.length !== 3) {
             throw new Error('构建阵容选择指令参数错误：需要包含3个英雄ID的数组');
+        }
+
+        if (typeof playerId !== 'number') {
+            throw new Error('构建阵容选择指令参数错误：playerId必须是数字');
         }
 
         // 验证所有ID都是数字
@@ -72,7 +77,8 @@ class ActionBuilder {
 
         return {
             action: ACTION_TYPES.PICK,
-            roles: heroIds
+            roles: heroIds,
+            playerId: playerId
         };
     }
 
@@ -278,7 +284,7 @@ class ActionBuilder {
                     action = this.buildTeleportAction(config.roleId, config.position);
                     break;
                 case 'PICK':
-                    action = this.buildPickAction(config.roles);
+                    action = this.buildPickAction(config.roles, config.playerId);
                     break;
                 case 'MAKE':
                     action = this.buildMakeAction(config.details);

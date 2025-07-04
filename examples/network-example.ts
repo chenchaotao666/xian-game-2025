@@ -37,7 +37,7 @@ async function basicNetworkExample(): Promise<void> {
         
         // 如果是第一回合，选择阵容
         if (gameData.round === 1) {
-            actions.push(ActionBuilder.buildPickAction([40, 43, 46])); // 吕布、刘备、诸葛亮
+            actions.push(ActionBuilder.buildPickAction([40, 43, 46], client.getGameState().playerId)); // 吕布、刘备、诸葛亮
         }
         
         // 生产兵力
@@ -121,7 +121,7 @@ function actionBuilderExample(): void {
         console.log('📝 行动对象:', JSON.stringify(moveAction, null, 2));
         
         // 构建选择阵容行动
-        const pickAction = ActionBuilder.buildPickAction([40, 43, 46]);
+        const pickAction = ActionBuilder.buildPickAction([40, 43, 46], 1001);
         console.log('\n👥 选择阵容:', ActionBuilder.getActionDescription(pickAction));
         
         // 构建生产兵力行动

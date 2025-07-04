@@ -248,7 +248,7 @@ class NetworkClient extends EventEmitter {
                     action = ActionBuilder.buildTeleportAction(params.roleId, params.position);
                     break;
                 case 'PICK':
-                    action = ActionBuilder.buildPickAction(params.roles);
+                    action = ActionBuilder.buildPickAction(params.roles, this.gameState.playerId);
                     break;
                 case 'MAKE':
                     action = ActionBuilder.buildMakeAction(params.details);
