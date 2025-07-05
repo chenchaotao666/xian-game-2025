@@ -18,7 +18,7 @@ import { log } from '..';
  */
 export function ExecutePickGenerals(context: ActionContext): State {
   try {
-    ActionBuilder.buildPickAction([zhaoyun.id, sunquan.id, zhugeliang.id], context.playerId);
+    ActionBuilder.buildPickAction([zhaoyun.id, sunquan.id, zhugeliang.id], context.teamBlackboard.getPlayerId());
     return State.SUCCEEDED;
   } catch (error) {
     log(`武将选择失败: ${error}`);

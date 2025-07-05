@@ -10,6 +10,7 @@
 
 import { Hero } from '../models/heros';
 import { GameMap } from '../context/gameMap';
+import { TeamBlackboard } from './TeamBlackboard';
 
 /**
  * 全局目标类型枚举
@@ -71,21 +72,6 @@ export interface IAgentState {
  */
 export type PartialExcept<T, K extends keyof T> = Pick<T, K> & { [P in Exclude<keyof T, K>]?: T[P] }
 
-// 前向声明，避免循环依赖
-export interface TeamBlackboard {
-  warrior: IAgent;
-  support: IAgent;
-  leader: IAgent;
-  team: IAgent[];
-  setFocusTarget(targetId: string | null): void;
-  getFocusTargetId(): string | undefined;
-  setTargetDebuff(targetId: string, debuffType: string, sourceSkill: string, durationTurns: number, currentTurn: number): void;
-  getTargetDebuffInfo(targetId: string, debuffType: string, currentTurn: number): { sourceSkill: string, appliedTurn: number, expiresTurn: number } | undefined;
-  setData(key: string, value: any): void;
-  getData(key: string): any;
-  deleteData(key: string): void;
-  hasData(key: string): boolean;
-}
 
 /**
  * 游戏代理（角色）接口
