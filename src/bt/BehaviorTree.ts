@@ -50,38 +50,39 @@ export const teamBehaviorTree = `root {
 }`
 
 export const heroBehaviorTree = `root {
-    /* 优先尝试使用技能 */
-    action [TryUseSkill]
-    
-    /* 基于策略的行为 */
-    selector {
-        /* 主动攻击策略 */
-        sequence {
-            condition [ShouldSeekEnemy]
-            selector {
-                sequence {
-                    condition [HasEnemyInRange]
-                    action [ExecuteAttackEnemy]
+    sequence {
+        /* 优先尝试使用技能 */
+        action [TryUseSkill]
+        /* 基于策略的行为 */
+        selector {
+            /* 主动攻击策略 */
+            sequence {
+                condition [ShouldSeekEnemy]
+                selector {
+                    sequence {
+                        condition [HasEnemyInRange]
+                        action [ExecuteAttackEnemy]
+                    }
+                    action [ExecuteSeekEnemy]
                 }
-                action [ExecuteSeekEnemy]
             }
-        }
 
-        /* 争夺据点策略 */
-        sequence {
-            condition [ShouldGroupUp]
-            action [ExecuteMoveToFlag]
-        }
-        
-        /* 刷城寨策略 */
-        sequence {
-            condition [ShouldAttackFortress]
-            selector {
-                sequence {
-                    condition [HasFortressInRange]
-                    action [ExecuteAttackFortress]
+            /* 争夺据点策略 */
+            sequence {
+                condition [ShouldGroupUp]
+                action [ExecuteMoveToFlag]
+            }
+            
+            /* 刷城寨策略 */
+            sequence {
+                condition [ShouldAttackFortress]
+                selector {
+                    sequence {
+                        condition [HasFortressInRange]
+                        action [ExecuteAttackFortress]
+                    }
+                    action [ExecuteSeekFortress]
                 }
-                action [ExecuteSeekFortress]
             }
         }
     }

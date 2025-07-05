@@ -110,7 +110,6 @@ function setupClientEventListeners(client: NetworkClient): void {
 
         client.on('inquire', (gameData: InquireMessageData) => {
             log(`第${gameData.round}回合 - 等待行动`, 'debug');
-            log(`游戏状态: ${JSON.stringify(gameData)}`);
             if (gameData.round === 1) {
                 init(client, client.getGameState().playerId);
             } else {
