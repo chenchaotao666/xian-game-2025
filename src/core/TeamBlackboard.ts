@@ -703,6 +703,106 @@ export class TeamBlackboard {
   }
 
   /**
+   * 设置城寨攻击目标
+   * @param cityTarget 城寨目标对象
+   */
+  public setCityTarget(cityTarget: any): void {
+    if (!cityTarget) {
+      this.cityAttackTarget = null;
+      console.log(`[团队黑板]: 取消城寨攻击目标`);
+      return;
+    }
+
+    const currentRound = this.getCurrentRound();
+    this.cityAttackTarget = {
+      cityId: cityTarget.roleId,
+      cityType: cityTarget.cityType,
+      position: cityTarget.position,
+      healthPercentage: cityTarget.healthPercentage,
+      distance: 0, // 将在使用时计算
+      priority: 90,
+      safetyScore: 70,
+      recommendedHeroes: [],
+      reason: '选择最优城寨攻击目标',
+      setAt: currentRound
+    };
+    console.log(`[团队黑板]: 设置城寨攻击目标 - ${cityTarget.cityType}(${cityTarget.roleId})`);
+  }
+
+  /**
+   * 设置敌方攻击目标
+   * @param enemyTarget 敌方目标对象
+   */
+  public setEnemyTarget(enemyTarget: any): void {
+    if (!enemyTarget) {
+      this.enemyAttackTarget = null;
+      console.log(`[团队黑板]: 取消敌方攻击目标`);
+      return;
+    }
+
+    const currentRound = this.getCurrentRound();
+    this.enemyAttackTarget = {
+      targetEnemyId: enemyTarget.roleId,
+      enemyPosition: enemyTarget.position,
+      powerComparison: 1.0, // 将在使用时计算
+      avgDistance: 0, // 将在使用时计算
+      priority: 100,
+      riskLevel: 'MEDIUM',
+      reason: '选择距离最近的敌方英雄',
+      setAt: currentRound
+    };
+    console.log(`[团队黑板]: 设置敌方攻击目标 - 英雄${enemyTarget.roleId}`);
+  }
+
+  /**
+   * 设置龙旗占领目标
+   * @param flagTarget 龙旗目标对象
+   */
+  public setFlagTarget(flagTarget: any): void {
+    if (!flagTarget) {
+      this.flagCaptureTarget = null;
+      console.log(`[团队黑板]: 取消龙旗占领目标`);
+      return;
+    }
+
+    const currentRound = this.getCurrentRound();
+    this.flagCaptureTarget = {
+      flagPosition: flagTarget.position,
+      controlStatus: 'NEUTRAL', // 将在使用时计算
+      distance: 0, // 将在使用时计算
+      risk: 50,
+      recommendedHeroes: [],
+      reason: '占领龙旗据点',
+      setAt: currentRound
+    };
+    console.log(`[团队黑板]: 设置龙旗占领目标 - 位置(${flagTarget.position?.x}, ${flagTarget.position?.y})`);
+  }
+
+  /**
+   * 获取城寨攻击目标
+   * @returns 城寨攻击目标数据或null
+   */
+  public getCityTarget(): CityAttackData | null {
+    return this.cityAttackTarget;
+  }
+
+  /**
+   * 获取敌方攻击目标
+   * @returns 敌方攻击目标数据或null
+   */
+  public getEnemyTarget(): EnemyAttackData | null {
+    return this.enemyAttackTarget;
+  }
+
+  /**
+   * 获取龙旗占领目标
+   * @returns 龙旗占领目标数据或null
+   */
+  public getFlagTarget(): FlagCaptureData | null {
+    return this.flagCaptureTarget;
+  }
+
+  /**
    * 记录目标身上的debuff状态
    * @param targetId 目标ID
    * @param debuffType debuff类型

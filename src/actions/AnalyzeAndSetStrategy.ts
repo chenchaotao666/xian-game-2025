@@ -246,8 +246,8 @@ function setEnemyTarget(blackboard: TeamBlackboard): void {
 
   const targetEnemy = enemyDistances[0].enemy;
   
-  // 传递完整的敌人对象
-  blackboard.setFocusTarget(targetEnemy);
+  // 使用新的setEnemyTarget方法
+  blackboard.setEnemyTarget(targetEnemy);
   
   log(`[策略分析] 设置敌人目标: 英雄${targetEnemy.roleId} (血量: ${targetEnemy.life}/${targetEnemy.maxLife}, 距离: ${enemyDistances[0].avgDistance.toFixed(1)})`);
 }
@@ -295,8 +295,8 @@ function setCityTarget(blackboard: TeamBlackboard): void {
     return;
   }
 
-  // 传递完整的城寨对象
-  blackboard.setFocusTarget(bestCity.city);
+  // 使用新的setCityTarget方法
+  blackboard.setCityTarget(bestCity.city);
   
   log(`[策略分析] 设置城寨目标: ${bestCity.city.cityType} (血量: ${bestCity.city.healthPercentage}%, 距离: ${bestCity.avgDistance.toFixed(1)})`);
 }
@@ -328,8 +328,8 @@ function setFlagTarget(blackboard: TeamBlackboard): void {
     return;
   }
 
-  // 传递完整的据点对象
-  blackboard.setFocusTarget(stronghold);
+  // 使用新的setFlagTarget方法
+  blackboard.setFlagTarget(stronghold);
   
   log(`[策略分析] 设置龙旗目标: 位置(${stronghold.position.x}, ${stronghold.position.y}), 距离: ${avgDistance.toFixed(1)}`);
 }
@@ -339,13 +339,33 @@ function setFlagTarget(blackboard: TeamBlackboard): void {
  */
 function logCurrentStrategyInfo(blackboard: TeamBlackboard): void {
   const currentStrategy = blackboard.getCurrentStrategy();
-  const focusTargetId = blackboard.getFocusTargetId();
   
   if (currentStrategy) {
     log(`[策略分析] 当前策略: ${currentStrategy}`);
     
-    if (focusTargetId) {
-      log(`[策略分析] 目标设置: ${focusTargetId}`);
+    // 根据策略类型输出相应的目标信息
+    switch (currentStrategy) {
+      case StrategyType.FOCUS_FIRE:
+      case StrategyType.ATTACK_ENEMY:
+        const enemyTarget = blackboard.getEnemyTarget();
+        if (enemyTarget) {
+          log(`[策略分析] 敌方目标: 英雄${enemyTarget.targetEnemyId}`);
+        }
+        break;
+        
+      case StrategyType.ATTACK_CITY:
+        const cityTarget = blackboard.getCityTarget();
+        if (cityTarget) {
+          log(`[策略分析] 城寨目标: ${cityTarget.cityType}(${cityTarget.cityId})`);
+        }
+        break;
+        
+      case StrategyType.CAPTURE_FLAG:
+        const flagTarget = blackboard.getFlagTarget();
+        if (flagTarget) {
+          log(`[策略分析] 龙旗目标: 位置(${flagTarget.flagPosition.x}, ${flagTarget.flagPosition.y})`);
+        }
+        break;
     }
 
     // 输出策略历史信息
