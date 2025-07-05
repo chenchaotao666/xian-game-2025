@@ -5,3 +5,4 @@ export { CanCaptureDragonFlag } from './CanCaptureDragonFlag';
 export { ShouldSeekEnemy } from './hero-conditions/ShouldSeekEnemy';
 export { HasEnemyInRange } from './hero-conditions/HasEnemyInRange';
 export { ShouldGroupUp } from './hero-conditions/ShouldGroupUp';
+export { ShouldAttackFortress } from './hero-conditions/ShouldAttackFortress';

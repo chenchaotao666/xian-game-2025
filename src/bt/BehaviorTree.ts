@@ -67,13 +67,7 @@ export const heroBehaviorTree = `root {
         /* 争夺据点策略 */
         sequence {
             condition [ShouldGroupUp]
-            selector {
-                sequence {
-                    condition [IsInDragonFlag]
-                    action [ExecuteFlagBattle]
-                }
-                action [ExecuteMoveToFlag]
-            }
+            action [ExecuteMoveToFlag]
         }
         
         /* 刷城寨策略 */

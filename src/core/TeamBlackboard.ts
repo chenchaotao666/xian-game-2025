@@ -596,7 +596,7 @@ export class TeamBlackboard {
 
   /**
    * 设置团队集火目标
-   * @param target 目标对象，可以是敌方英雄、城寨、据点或集合位置
+   * @param target 目标对象，可以是敌方英雄、城寨、据点
    */
   public setFocusTarget(target: any): void {
     if (!target) {
