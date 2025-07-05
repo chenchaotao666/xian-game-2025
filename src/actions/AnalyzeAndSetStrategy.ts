@@ -17,10 +17,10 @@ import { log } from '../index';
  */
 export function AnalyzeAndSetStrategy(context: ActionContext): State {
   const { agent } = context;
-  
+
   try {
     // 获取团队黑板实例
-    const teamBlackboard = (agent as any).teamBlackboard as TeamBlackboard;
+    const teamBlackboard = context.teamBlackboard as TeamBlackboard;
     if (!teamBlackboard) {
       log('[策略分析] 错误：未找到团队黑板实例');
       return State.FAILED;
@@ -40,7 +40,7 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
 
     // 执行全局策略分析
     const globalStrategy = strategyAnalysis.analyzeGlobalStrategy();
-    
+
     // 记录策略决策
     log(`[策略分析] 全局策略决策: ${globalStrategy.strategy}`);
     log(`[策略分析] 优先级: ${globalStrategy.priority}, 置信度: ${globalStrategy.confidence}%`);
@@ -71,7 +71,7 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
 
     // 输出当前策略信息
     logCurrentStrategyInfo(teamBlackboard, agent);
-    
+
     return State.SUCCEEDED;
 
   } catch (error) {
@@ -87,18 +87,18 @@ function getStrategyData(strategyAnalysis: StrategyAnalysis, strategy: StrategyT
   switch (strategy) {
     case StrategyType.FOCUS_FIRE:
       return strategyAnalysis.analyzeFocusFireStrategy();
-      
+
     case StrategyType.ATTACK_CITY:
       const cityAssessments = strategyAnalysis.analyzeCityAttackStrategy();
       return cityAssessments.length > 0 ? cityAssessments[0] : null;
-      
+
     case StrategyType.ATTACK_ENEMY:
     case StrategyType.GATHER_FORCES:
       return strategyAnalysis.analyzeEnemyAttackStrategy();
-      
+
     case StrategyType.CAPTURE_FLAG:
       return strategyAnalysis.analyzeFlagCaptureStrategy();
-      
+
     default:
       return {};
   }
@@ -108,18 +108,18 @@ function getStrategyData(strategyAnalysis: StrategyAnalysis, strategy: StrategyT
  * 设置其他辅助策略信息
  */
 function setAdditionalStrategyInfo(
-  blackboard: TeamBlackboard, 
-  strategy: StrategyDecision, 
+  blackboard: TeamBlackboard,
+  strategy: StrategyDecision,
   agent: any
 ): void {
-  
+
   // 设置策略相关的元数据
   blackboard.setData('strategy_priority', strategy.priority);
   blackboard.setData('strategy_confidence', strategy.confidence);
   blackboard.setData('strategy_reason', strategy.reason);
   blackboard.setData('strategy_details', strategy.details);
   blackboard.setData('strategy_execution_plan', strategy.executionPlan);
-  
+
   // 设置策略更新时间
   blackboard.setData('strategy_updated_at', Date.now());
   blackboard.setData('strategy_updated_round', blackboard.getCurrentRound());
@@ -130,32 +130,32 @@ function setAdditionalStrategyInfo(
       blackboard.setData('combat_mode', 'aggressive');
       blackboard.setData('formation_preference', 'concentrated');
       break;
-      
+
     case StrategyType.ATTACK_ENEMY:
       blackboard.setData('combat_mode', 'offensive');
       blackboard.setData('formation_preference', 'balanced');
       break;
-      
+
     case StrategyType.GATHER_FORCES:
       blackboard.setData('combat_mode', 'gathering');
       blackboard.setData('formation_preference', 'defensive');
       break;
-      
+
     case StrategyType.ATTACK_CITY:
       blackboard.setData('combat_mode', 'siege');
       blackboard.setData('formation_preference', 'siege');
       break;
-      
+
     case StrategyType.CAPTURE_FLAG:
       blackboard.setData('combat_mode', 'territorial');
       blackboard.setData('formation_preference', 'mobile');
       break;
-      
+
     case StrategyType.DEFENSIVE:
       blackboard.setData('combat_mode', 'defensive');
       blackboard.setData('formation_preference', 'defensive');
       break;
-      
+
     case StrategyType.RESOURCE_MANAGEMENT:
       blackboard.setData('combat_mode', 'economic');
       blackboard.setData('formation_preference', 'conservative');
@@ -170,10 +170,10 @@ function setAdditionalStrategyInfo(
  */
 function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
   const currentStrategy = blackboard.getCurrentStrategy();
-  
+
   if (currentStrategy) {
     log(`[策略分析] 当前策略: ${currentStrategy}`);
-    
+
     // 根据策略类型输出相应的目标信息
     switch (currentStrategy) {
       case StrategyType.FOCUS_FIRE:
@@ -183,7 +183,7 @@ function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
           log(`[策略分析] 集火理由: ${focusTarget.reason}`);
         }
         break;
-        
+
       case StrategyType.ATTACK_CITY:
         const cityTarget = blackboard.getCityAttackTarget();
         if (cityTarget) {
@@ -192,7 +192,7 @@ function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
           log(`[策略分析] 攻击理由: ${cityTarget.reason}`);
         }
         break;
-        
+
       case StrategyType.ATTACK_ENEMY:
         const enemyTarget = blackboard.getEnemyAttackTarget();
         if (enemyTarget) {
@@ -201,7 +201,7 @@ function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
           log(`[策略分析] 攻击理由: ${enemyTarget.reason}`);
         }
         break;
-        
+
       case StrategyType.GATHER_FORCES:
         const gatherPos = blackboard.getGatherPosition();
         if (gatherPos) {
@@ -210,7 +210,7 @@ function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
           log(`[策略分析] 预计时间: ${gatherPos.estimatedTime}回合`);
         }
         break;
-        
+
       case StrategyType.CAPTURE_FLAG:
         const flagTarget = blackboard.getFlagCaptureTarget();
         if (flagTarget) {
@@ -220,7 +220,7 @@ function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
         }
         break;
     }
-    
+
     // 输出策略历史信息
     const recentHistory = blackboard.getRecentStrategyHistory(3);
     if (recentHistory.length > 1) {
