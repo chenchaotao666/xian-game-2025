@@ -30,7 +30,7 @@ const config: GameConfig = {
 /**
  * 日志输出函数
  */
-function log(message: string, level: 'debug' | 'info' | 'warn' | 'error' = 'info') {
+export function log(message: string, level: 'debug' | 'info' | 'warn' | 'error' = 'info') {
     const timestamp = new Date().toISOString();
     const levelMap = {
         debug: '🔍',

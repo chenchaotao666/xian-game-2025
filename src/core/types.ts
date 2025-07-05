@@ -76,6 +76,7 @@ export interface TeamBlackboard {
   warrior: IAgent;
   support: IAgent;
   leader: IAgent;
+  team: IAgent[];
   setFocusTarget(targetId: string | null): void;
   getFocusTargetId(): string | undefined;
   setTargetDebuff(targetId: string, debuffType: string, sourceSkill: string, durationTurns: number, currentTurn: number): void;
