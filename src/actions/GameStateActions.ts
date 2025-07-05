@@ -31,15 +31,7 @@ export function ExecutePickGenerals(context: ActionContext): State {
  * 根据团队情况智能选择最合适的BUFF
  */
 export function ExecuteChooseBuff(context: ActionContext): State {
-  const { agent } = context;
-
   try {
-    // 检查 agent 是否存在
-    if (!agent) {
-      console.log('ExecuteChooseBuff: agent 为 null，无法执行BUFF选择');
-      return State.FAILED;
-    }
-
     // 获取团队黑板
     const teamBlackboard = context.teamBlackboard;
 
@@ -115,11 +107,7 @@ export function ExecuteChooseBuff(context: ActionContext): State {
 
     return State.SUCCEEDED;
   } catch (error) {
-    if (agent) {
-      log(`BUFF选择失败: ${error}`);
-    } else {
-      console.log(`ExecuteChooseBuff BUFF选择失败: ${error}`);
-    }
+    console.log(`ExecuteChooseBuff BUFF选择失败: ${error}`);
     return State.FAILED;
   }
 }
@@ -132,10 +120,6 @@ export function ExecuteChooseBuff(context: ActionContext): State {
  * 3. 要把粮草用完
  */
 export function ExecuteTroopProduction(context: ActionContext): State {
-  if (!context.agent) {
-    console.log('ExecuteTroopProduction: agent 为 null，无法执行士兵生产');
-    return State.FAILED;
-  }
 
   try {
     // 从团队黑板获取游戏状态信息
@@ -169,7 +153,7 @@ export function ExecuteTroopProduction(context: ActionContext): State {
 
     // 计算生产计划
     const productionPlan = calculateOptimalTroopProduction(generals, currentFood);
-    
+
     if (productionPlan.length === 0) {
       log('没有可执行的生产计划');
       return State.FAILED;
@@ -177,11 +161,11 @@ export function ExecuteTroopProduction(context: ActionContext): State {
 
     // 执行生产
     ActionBuilder.buildMakeAction(productionPlan);
-    
+
     // 记录生产信息
     const totalCost = productionPlan.reduce((sum, plan) => sum + plan.soldiers.length * 20, 0);
     log(`执行士兵生产计划，总成本: ${totalCost} 粮草`);
-    
+
     return State.SUCCEEDED;
   } catch (error) {
     log(`士兵生产执行失败: ${error}`);
@@ -193,10 +177,6 @@ export function ExecuteTroopProduction(context: ActionContext): State {
  * 执行阵型调整
  */
 export function ExecuteFormationChange(context: ActionContext): State {
-  if (!context.agent) {
-    console.log('ExecuteFormationChange: agent 为 null，无法执行阵型调整');
-    return State.FAILED;
-  }
   // 先不开阵型调整
   // ActionBuilder.buildFormAction(context.agent.id, 'offensive');
   return State.SUCCEEDED;
@@ -345,75 +325,75 @@ function calculateOptimalTroopProduction(generals: any[], currentFood: number): 
   const TROOP_COST = 20; // 每个士兵成本
   const ARCHER_TYPE = 7; // 弓兵类型
   const SHIELD_TYPE = 8; // 盾兵类型
-  
+
   const productionPlan: any[] = [];
   let remainingFood = currentFood;
-  
+
   // 过滤出存活的武将
-  const aliveGenerals = generals.filter(general => 
+  const aliveGenerals = generals.filter(general =>
     general.life > 0 && general.reviveRound === 0
   );
-  
+
   if (aliveGenerals.length === 0) {
     log('没有存活的武将，无法生产士兵');
     return [];
   }
-  
+
   // 第一阶段：优先给每个武将配两个盾兵
   log('第一阶段：优先为每个武将配置2个盾兵');
   for (const general of aliveGenerals) {
     const currentShields = general.solderProps?.filter((s: any) => s.roleId === SHIELD_TYPE).length || 0;
     const maxTroops = general.commander; // 统帅值限制
     const currentTotalTroops = general.solderProps?.length || 0;
-    
+
     // 计算需要补充的盾兵数量（最多2个）
     const neededShields = Math.min(2 - currentShields, maxTroops - currentTotalTroops);
-    
+
     if (neededShields > 0 && remainingFood >= neededShields * TROOP_COST) {
       const shields = Array(neededShields).fill(SHIELD_TYPE);
       productionPlan.push({
         roleId: general.roleId,
         soldiers: shields
       });
-      
+
       remainingFood -= neededShields * TROOP_COST;
       log(`为武将 ${general.roleId} 配置 ${neededShields} 个盾兵`);
     }
   }
-  
+
   // 第二阶段：按优先级顺序加兵，保持6:4比例
   log('第二阶段：按优先级顺序加兵（战士>统帅>辅助），保持弓兵盾兵6:4比例');
-  
+
   // 按武将类型排序：战士(warrior) > 统帅(commander) > 辅助(strategist)
   const sortedGenerals = [...aliveGenerals].sort((a, b) => {
     const typeOrder = getGeneralTypeOrder(a.roleId);
     const typeOrderB = getGeneralTypeOrder(b.roleId);
     return typeOrder - typeOrderB;
   });
-  
+
   // 继续为武将配兵直到粮草用完
   while (remainingFood >= TROOP_COST) {
     let anyGeneralCanAddTroops = false;
-    
+
     for (const general of sortedGenerals) {
       if (remainingFood < TROOP_COST) break;
-      
+
       const currentTroops = general.solderProps?.length || 0;
       const maxTroops = general.commander;
-      
+
       if (currentTroops >= maxTroops) {
         continue; // 已达到统帅上限
       }
-      
+
       // 计算当前弓兵和盾兵数量
       const currentArchers = general.solderProps?.filter((s: any) => s.roleId === ARCHER_TYPE).length || 0;
       const currentShields = general.solderProps?.filter((s: any) => s.roleId === SHIELD_TYPE).length || 0;
-      
+
       // 按6:4比例决定下一个兵种
       const totalCurrent = currentArchers + currentShields;
       const expectedArchers = Math.round(totalCurrent * 0.6);
       const expectedShields = Math.round(totalCurrent * 0.4);
-      
+
       let soldierType: number;
       if (currentArchers < expectedArchers) {
         soldierType = ARCHER_TYPE;
@@ -423,7 +403,7 @@ function calculateOptimalTroopProduction(generals: any[], currentFood: number): 
         // 如果比例已经平衡，优先选择弓兵
         soldierType = ARCHER_TYPE;
       }
-      
+
       // 检查是否已有该武将的生产计划
       let existingPlan = productionPlan.find(p => p.roleId === general.roleId);
       if (!existingPlan) {
@@ -433,27 +413,27 @@ function calculateOptimalTroopProduction(generals: any[], currentFood: number): 
         };
         productionPlan.push(existingPlan);
       }
-      
+
       // 检查加上新兵后是否超过统帅上限
       const plannedTroops = existingPlan.soldiers.length;
       if (currentTroops + plannedTroops >= maxTroops) {
         continue;
       }
-      
+
       existingPlan.soldiers.push(soldierType);
       remainingFood -= TROOP_COST;
       anyGeneralCanAddTroops = true;
-      
+
       const soldierTypeName = soldierType === ARCHER_TYPE ? '弓兵' : '盾兵';
       log(`为武将 ${general.roleId} 追加 1 个${soldierTypeName}`);
     }
-    
+
     if (!anyGeneralCanAddTroops) {
       log('所有武将都已达到统帅上限，停止生产');
       break;
     }
   }
-  
+
   log(`生产计划完成，剩余粮草: ${remainingFood}`);
   return productionPlan;
 }
@@ -467,7 +447,7 @@ function getGeneralTypeOrder(roleId: number): number {
   // 40-42: 战士类 (吕布、赵云、关羽)
   // 43-45: 统帅类 (刘备、曹操、孙权)  
   // 46-48: 辅助类 (诸葛亮、周瑜、司马懿)
-  
+
   if (roleId >= 40 && roleId <= 42) {
     return 1; // 战士优先级最高
   } else if (roleId >= 43 && roleId <= 45) {
@@ -475,7 +455,7 @@ function getGeneralTypeOrder(roleId: number): number {
   } else if (roleId >= 46 && roleId <= 48) {
     return 3; // 辅助优先级最低
   }
-  
+
   return 4; // 未知类型，优先级最低
 }
 
