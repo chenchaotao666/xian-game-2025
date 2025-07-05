@@ -82,8 +82,8 @@ export function executeSkillZhugeliang(context: ActionContext): State {
     const skill1 = zhugeliangHero.skills.find(skill => skill.skillId === 4600); // 锦囊妙计（一技能）
     const skill2 = zhugeliangHero.skills.find(skill => skill.skillId === 4601); // 斗转星移（二技能）
     
-    // 检查是否有敌人在附近（距离5以内）
-    const hasNearbyEnemies = checkNearbyEnemies(teamBlackboard, zhugeliangHero.position, 5);
+    // 检查是否有敌人在附近（距离3以内）
+    const hasNearbyEnemies = checkNearbyEnemies(teamBlackboard, zhugeliangHero.position, 3);
     
     // 有敌人在附近时优先使用技能1（锦囊妙计）
     if (skill1 && skill1.isReady && hasNearbyEnemies) {
