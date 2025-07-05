@@ -1,6 +1,7 @@
 import { ActionContext } from '../core/types';
 import { TeamBlackboard } from '../core/TeamBlackboard';
 import { StrategyType } from '../core/StrategyAnalysis';
+import { getTeamBlackboard } from './utils';
 
 /**
  * 检查是否能够占领龙旗
@@ -208,24 +209,4 @@ export function getDragonFlagCaptureUrgency(context: ActionContext): 'LOW' | 'ME
   return 'LOW';
 }
 
-/**
- * 从上下文获取TeamBlackboard实例
- */
-function getTeamBlackboard(context: ActionContext): TeamBlackboard | null {
-  if (context.teamBlackboard) {
-    return context.teamBlackboard as TeamBlackboard;
-  }
-  
-  if (context.agent && (context.agent as any).teamBlackboard) {
-    return (context.agent as any).teamBlackboard as TeamBlackboard;
-  }
-  
-  if (!context.agent && context.teamBlackboard) {
-    const tb = context.teamBlackboard as TeamBlackboard;
-    if (tb.warrior || tb.support || tb.leader) {
-      return tb;
-    }
-  }
-  
-  return null;
-}
+
