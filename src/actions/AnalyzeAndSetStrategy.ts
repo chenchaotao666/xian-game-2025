@@ -21,13 +21,6 @@ import { AnalysisTools } from '../core/AnalysisTools';
  * - CAPTURE_FLAG：选择龙旗位置
  */
 export function AnalyzeAndSetStrategy(context: ActionContext): State {
-  const { agent } = context;
-  
-  if (!agent) {
-    console.error('[策略分析] 错误：agent为空');
-    return State.FAILED;
-  }
-  
   try {
     // 获取团队黑板实例
     const teamBlackboard = context.teamBlackboard as TeamBlackboard;
@@ -49,7 +42,7 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
     const strategyAnalysis = new StrategyAnalysis(teamBlackboard);
 
     // 执行全局策略分析
-    const globalStrategy = analyzeGlobalStrategy(strategyAnalysis, teamBlackboard, agent);
+    const globalStrategy = analyzeGlobalStrategy(strategyAnalysis, teamBlackboard);
 
     // 记录策略决策
     log(`[策略分析] 全局策略决策: ${globalStrategy.strategy}`);
@@ -65,9 +58,6 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
       globalStrategy.reason
     );
 
-    // 设置其他辅助信息
-    setAdditionalStrategyInfo(teamBlackboard, globalStrategy, agent);
-
     // 记录执行计划
     if (globalStrategy.executionPlan && globalStrategy.executionPlan.length > 0) {
       log(`[策略分析] 执行计划:`);
@@ -76,10 +66,10 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
       });
     }
     // 根据策略类型设置具体目标
-    setStrategyTarget(globalStrategy.strategy, teamBlackboard, agent);
+    setStrategyTarget(globalStrategy.strategy, teamBlackboard);
 
     // 输出当前策略信息
-    logCurrentStrategyInfo(teamBlackboard, agent);
+    logCurrentStrategyInfo(teamBlackboard);
 
     return State.SUCCEEDED;
 
@@ -95,7 +85,6 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
 function analyzeGlobalStrategy(
   strategyAnalysis: StrategyAnalysis, 
   blackboard: TeamBlackboard, 
-  agent: any
 ): StrategyDecision {
   const currentRound = blackboard.getCurrentRound();
   const myHeroes = blackboard.getMyAliveHeroes();
@@ -193,23 +182,23 @@ function analyzeGlobalStrategy(
 /**
  * 根据策略类型设置具体目标到TeamBlackboard
  */
-function setStrategyTarget(strategy: StrategyType, blackboard: TeamBlackboard, agent: any): void {
+function setStrategyTarget(strategy: StrategyType, blackboard: TeamBlackboard): void {
   switch (strategy) {
     case StrategyType.FOCUS_FIRE:
     case StrategyType.ATTACK_ENEMY:
-      setEnemyTarget(blackboard, agent);
+      setEnemyTarget(blackboard);
       break;
 
     case StrategyType.GATHER_FORCES:
-      setGatherTarget(blackboard, agent);
+      setGatherTarget(blackboard);
       break;
 
     case StrategyType.ATTACK_CITY:
-      setCityTarget(blackboard, agent);
+      setCityTarget(blackboard);
       break;
 
     case StrategyType.CAPTURE_FLAG:
-      setFlagTarget(blackboard, agent);
+      setFlagTarget(blackboard);
       break;
   }
 }
@@ -217,7 +206,7 @@ function setStrategyTarget(strategy: StrategyType, blackboard: TeamBlackboard, a
 /**
  * 设置敌方目标（距离最近，距离相同选血量少的）
  */
-function setEnemyTarget(blackboard: TeamBlackboard, agent: any): void {
+function setEnemyTarget(blackboard: TeamBlackboard): void {
   const myHeroes = blackboard.getMyAliveHeroes();
   const enemyHeroes = blackboard.getEnemyAliveHeroes();
   
@@ -262,8 +251,8 @@ function setEnemyTarget(blackboard: TeamBlackboard, agent: any): void {
 
   const targetEnemy = reachableEnemies[0].enemy;
   
-  // 使用setFocusTarget设置目标
-  blackboard.setFocusTarget(targetEnemy.roleId.toString());
+  // 传递完整的敌方英雄对象
+  blackboard.setFocusTarget(targetEnemy);
   
   log(`[策略分析] 设置敌方目标: 英雄${targetEnemy.roleId} (血量: ${targetEnemy.life}/${targetEnemy.maxLife}, 距离: ${reachableEnemies[0].avgDistance.toFixed(1)})`);
 }
@@ -271,7 +260,7 @@ function setEnemyTarget(blackboard: TeamBlackboard, agent: any): void {
 /**
  * 设置集合位置目标
  */
-function setGatherTarget(blackboard: TeamBlackboard, agent: any): void {
+function setGatherTarget(blackboard: TeamBlackboard): void {
   const myHeroes = blackboard.getMyAliveHeroes();
   const enemyHeroes = blackboard.getEnemyAliveHeroes();
   
@@ -324,9 +313,15 @@ function setGatherTarget(blackboard: TeamBlackboard, agent: any): void {
     }
   }
 
-  // 创建一个虚拟的集合目标ID（使用位置坐标）
-  const gatherTargetId = `gather_${gatherPosition.x}_${gatherPosition.y}`;
-  blackboard.setFocusTarget(gatherTargetId);
+  // 创建集合目标对象
+  const gatherTarget = {
+    position: gatherPosition,
+    purpose: '战术集合',
+    estimatedTime: 3,
+    participatingHeroes: validHeroes.map(hero => hero.roleId)
+  };
+  
+  blackboard.setFocusTarget(gatherTarget);
   
   log(`[策略分析] 设置集合目标: 位置(${gatherPosition.x}, ${gatherPosition.y})`);
 }
@@ -334,7 +329,7 @@ function setGatherTarget(blackboard: TeamBlackboard, agent: any): void {
 /**
  * 设置城寨攻击目标
  */
-function setCityTarget(blackboard: TeamBlackboard, agent: any): void {
+function setCityTarget(blackboard: TeamBlackboard): void {
   const cities = blackboard.getCities();
   const myHeroes = blackboard.getMyAliveHeroes();
   
@@ -374,7 +369,8 @@ function setCityTarget(blackboard: TeamBlackboard, agent: any): void {
     return;
   }
 
-  blackboard.setFocusTarget(bestCity.city.roleId.toString());
+  // 传递完整的城寨对象
+  blackboard.setFocusTarget(bestCity.city);
   
   log(`[策略分析] 设置城寨目标: ${bestCity.city.cityType} (血量: ${bestCity.city.healthPercentage}%, 距离: ${bestCity.avgDistance.toFixed(1)})`);
 }
@@ -382,7 +378,7 @@ function setCityTarget(blackboard: TeamBlackboard, agent: any): void {
 /**
  * 设置龙旗占领目标
  */
-function setFlagTarget(blackboard: TeamBlackboard, agent: any): void {
+function setFlagTarget(blackboard: TeamBlackboard): void {
   const stronghold = blackboard.getStronghold();
   const myHeroes = blackboard.getMyAliveHeroes();
   
@@ -406,9 +402,8 @@ function setFlagTarget(blackboard: TeamBlackboard, agent: any): void {
     return;
   }
 
-  // 创建龙旗目标ID
-  const flagTargetId = `flag_${stronghold.position.x}_${stronghold.position.y}`;
-  blackboard.setFocusTarget(flagTargetId);
+  // 传递完整的据点对象
+  blackboard.setFocusTarget(stronghold);
   
   log(`[策略分析] 设置龙旗目标: 位置(${stronghold.position.x}, ${stronghold.position.y}), 距离: ${avgDistance.toFixed(1)}`);
 }
@@ -416,7 +411,7 @@ function setFlagTarget(blackboard: TeamBlackboard, agent: any): void {
 /**
  * 输出当前策略信息
  */
-function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
+function logCurrentStrategyInfo(blackboard: TeamBlackboard): void {
   const currentStrategy = blackboard.getCurrentStrategy();
   const focusTargetId = blackboard.getFocusTargetId();
   
