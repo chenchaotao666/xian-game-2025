@@ -50,6 +50,9 @@ export const teamBehaviorTree = `root {
 }`
 
 export const heroBehaviorTree = `root {
+    /* 优先尝试使用技能 */
+    action [TryUseSkill]
+    
     /* 基于策略的行为 */
     selector {
         /* 主动攻击策略 */
