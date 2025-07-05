@@ -29,39 +29,7 @@ export function ShouldPickGenerals(context: ActionContext): boolean {
   return false;
 }
 
-/**
- * 检查是否可以选择BUFF
- * 每100回合可以选择一个增益效果
- */
-export function canChooseBuff(context: ActionContext): boolean {
-  const { agent } = context;
-  
-  // 每100回合可以选择BUFF（100, 200, 300...）
-  return agent.currentTurn > 0 && agent.currentTurn % 100 === 0;
-}
 
-
-/**
- * 检查是否需要更多士兵
- * 根据统帅值和当前兵力判断
- */
-export function NeedMoreTroops(context: ActionContext): boolean {
-  const { agent } = context;
-  
-  // 检查当前兵力是否达到统帅上限
-  const troops = (agent as any).troops;
-  const generalStats = (agent as any).generalStats;
-  
-  if (!troops || !generalStats) {
-    return true; // 没有兵力信息时默认需要
-  }
-  
-  const currentTroops = troops.length;
-  const maxTroops = generalStats.leadership; // 统帅值决定带兵上限
-  
-  // 如果当前兵力少于统帅上限的80%，则需要补充
-  return currentTroops < maxTroops * 0.8;
-}
 
 /**
  * 检查是否应该切换阵型
