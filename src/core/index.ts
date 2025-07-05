@@ -6,6 +6,7 @@ import { sunquan, zhaoyun, zhugeliang } from "@/models/heros";
 import ActionBuilder from "@/network/ActionBuilder";
 import { TeamBlackboard } from "./TeamBlackboard";
 import NetworkClient from "../network/NetworkClient";
+import { log } from "console";
 
 const context: ActionContext = {
     agent: null,
@@ -29,11 +30,13 @@ export function init(client: NetworkClient, playerId: number) {
     context.teamBlackboard = teamBlackboard;
     // 关联网络客户端，让网络客户端可以更新团队黑板的数据
     client.setTeamBlackboard(teamBlackboard);
+    log(`初始化成功: ${playerId}`);
 }
 
 
 function pickGenerals(playerId: number): void {
     ActionBuilder.buildPickAction([zhaoyun.id, sunquan.id, zhugeliang.id], playerId);
+    log(`武将选择成功: ${playerId}:${zhaoyun.name},${sunquan.name},${zhugeliang.name}`);
 }
 
 // 调用行为树，处理每回合的行动

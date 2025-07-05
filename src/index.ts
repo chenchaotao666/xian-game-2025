@@ -111,7 +111,7 @@ function setupClientEventListeners(client: NetworkClient): void {
         client.on('inquire', (gameData: InquireMessageData) => {
             log(`第${gameData.round}回合 - 等待行动`, 'debug');
             if (gameData.round === 1) {
-                init(client.getGameState().playerId);
+                init(client, client.getGameState().playerId);
             } else {
                 handleTurn();
             }
