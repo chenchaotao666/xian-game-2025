@@ -14,6 +14,7 @@ import { GameMap } from '../context/gameMap';
 import { BehaviorTreeAgent } from './BehaviorTreeAgent';
 import { Agent } from 'mistreevous/dist/Agent';
 import { teamBehaviorTree } from './BehaviorTree';
+import { log } from 'src';
 
 /**
  * 行为树控制器类
@@ -46,7 +47,7 @@ export class BehaviorTreeController {
     this.behaviorTree = new BehaviourTree(teamBehaviorTree, this.behaviorTreeAgent as unknown as Agent);
 
     if (debug) {
-      this.log('行为树控制器初始化完成');
+      log('行为树控制器初始化完成');
     }
   }
 
@@ -55,23 +56,20 @@ export class BehaviorTreeController {
    */
   public takeTurn(): void {
 
-    this.log(`开始执行行为树..`);
+    log(`开始执行行为树..`);
 
     try {
-      // 更新感知信息
-      this.updateInfo();
-
       // 执行行为树
       this.behaviorTree.step();
 
       // 检查行为树是否已完成
       if (!this.behaviorTree.isRunning()) {
-        this.log('行为树执行完成，重置树状态');
+        log('行为树执行完成，重置树状态');
         this.behaviorTree.reset();
       }
 
     } catch (error) {
-      this.log(`行为树执行出错: ${error}`);
+      log(`行为树执行出错: ${error}`);
       // 发生错误时重置行为树
       this.behaviorTree.reset();
       // 执行默认行为（空闲）
