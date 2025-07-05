@@ -16,8 +16,14 @@ import { log } from '..';
  * 执行武将选择
  * 根据当前游戏状态选择最合适的武将
  */
-export function ExecutePickGenerals(context: ActionContext): void {
-  ActionBuilder.buildPickAction([zhaoyun.id, sunquan.id, zhugeliang.id], context.playerId);
+export function ExecutePickGenerals(context: ActionContext): State {
+  try {
+    ActionBuilder.buildPickAction([zhaoyun.id, sunquan.id, zhugeliang.id], context.playerId);
+    return State.SUCCEEDED;
+  } catch (error) {
+    log(`武将选择失败: ${error}`);
+    return State.FAILED;
+  }
 }
 
 /**
@@ -125,10 +131,10 @@ export function ExecuteChooseBuff(context: ActionContext): State {
  * 2. 然后按战士，统帅，辅助的优先顺序去加兵，保持弓兵盾兵6：4的比例
  * 3. 要把粮草用完
  */
-export function ExecuteTroopProduction(context: ActionContext): void {
+export function ExecuteTroopProduction(context: ActionContext): State {
   if (!context.agent) {
     console.log('ExecuteTroopProduction: agent 为 null，无法执行士兵生产');
-    return;
+    return State.FAILED;
   }
 
   try {
@@ -136,21 +142,21 @@ export function ExecuteTroopProduction(context: ActionContext): void {
     const teamBlackboard = context.teamBlackboard;
     if (!teamBlackboard) {
       log('无法获取团队黑板信息');
-      return;
+      return State.FAILED;
     }
 
     // 获取当前玩家的游戏状态
     const gameState = teamBlackboard.getData('gameState');
     if (!gameState || !gameState.players) {
       log('无法从团队黑板获取游戏状态');
-      return;
+      return State.FAILED;
     }
 
     const playerId = context.playerId;
     const player = gameState.players.find((p: any) => p.playerId === playerId);
     if (!player) {
       log(`找不到玩家 ${playerId} 的信息`);
-      return;
+      return State.FAILED;
     }
 
     const currentFood = player.supplies; // 当前粮草
@@ -158,7 +164,7 @@ export function ExecuteTroopProduction(context: ActionContext): void {
 
     if (currentFood < 20) {
       log('粮草不足20，无法生产士兵');
-      return;
+      return State.FAILED;
     }
 
     // 计算生产计划
@@ -166,7 +172,7 @@ export function ExecuteTroopProduction(context: ActionContext): void {
     
     if (productionPlan.length === 0) {
       log('没有可执行的生产计划');
-      return;
+      return State.FAILED;
     }
 
     // 执行生产
@@ -176,27 +182,37 @@ export function ExecuteTroopProduction(context: ActionContext): void {
     const totalCost = productionPlan.reduce((sum, plan) => sum + plan.soldiers.length * 20, 0);
     log(`执行士兵生产计划，总成本: ${totalCost} 粮草`);
     
+    return State.SUCCEEDED;
   } catch (error) {
     log(`士兵生产执行失败: ${error}`);
+    return State.FAILED;
   }
 }
 
 /**
  * 执行阵型调整
  */
-export function ExecuteFormationChange(context: ActionContext): void {
+export function ExecuteFormationChange(context: ActionContext): State {
   if (!context.agent) {
     console.log('ExecuteFormationChange: agent 为 null，无法执行阵型调整');
-    return;
+    return State.FAILED;
   }
-  ActionBuilder.buildFormAction(context.agent.id, 'offensive');
+  // 先不开阵型调整
+  // ActionBuilder.buildFormAction(context.agent.id, 'offensive');
+  return State.SUCCEEDED;
 }
 
 /**
  * 执行占领据点
  */
-export function ExecuteCaptureFlag(context: ActionContext): void {
-  ActionBuilder.buildOccupyAction();
+export function ExecuteCaptureFlag(context: ActionContext): State {
+  try {
+    ActionBuilder.buildOccupyAction();
+    return State.SUCCEEDED;
+  } catch (error) {
+    log(`占领据点失败: ${error}`);
+    return State.FAILED;
+  }
 }
 
 
