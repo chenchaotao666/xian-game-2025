@@ -3,14 +3,14 @@
  * 程序入口文件 - 用于连接服务器和启动游戏客户端
  */
 
-import { ExecutePickGenerals } from './actions/GameStateActions.js';
-import { handleTurn, init } from './core/index.js';
-import { ActionContext } from './core/types.js';
-import { sunquan, zhaoyun, zhugeliang } from './models/heros.js';
-import { InquireMessageData } from './models/inquireMsg.js';
-import ActionBuilder from './network/ActionBuilder.js';
-import NetworkClient from './network/NetworkClient.js';
-import type { GameConfig, InquireMessage } from './types/index.js';
+import { ExecutePickGenerals } from './actions/GameStateActions';
+import { handleTurn, init } from './core/index';
+import { ActionContext } from './core/types';
+import { sunquan, zhaoyun, zhugeliang } from './models/heros';
+import { InquireMessageData } from './models/inquireMsg';
+import ActionBuilder from './network/ActionBuilder';
+import NetworkClient from './network/NetworkClient';
+import type { GameConfig, InquireMessage } from './types/index';
 
 /**
  * 游戏配置

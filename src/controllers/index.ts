@@ -1,8 +1,8 @@
-import { BehaviorTreeBuilder } from "@/bt/BehaviorTree";
+import { BehaviorTreeBuilder } from "../bt/BehaviorTree";
 import { Agent } from "../core/Agent";
 import { TeamBlackboard } from "../core/TeamBlackboard";
 import { sunquan, zhaoyun, zhugeliang } from "../models/heros";
-import { BehaviorTreeController } from "@/bt/BehaviorTreeController";
+import { BehaviorTreeController } from "../bt/BehaviorTreeController";
 
 function gameInit(food: number = 100) {
   const teamBlackboard = new TeamBlackboard(food);

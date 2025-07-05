@@ -1,4 +1,4 @@
-import { ActionContext } from "@/core/types";
+import { ActionContext } from "../core/types";
 import { State } from "mistreevous";
 
 /**

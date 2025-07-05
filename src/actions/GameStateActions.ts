@@ -1,7 +1,7 @@
 import { State } from 'mistreevous';
 import { ActionContext } from '../core/types';
 import ActionBuilder from '../network/ActionBuilder';
-import { sunquan, zhaoyun, zhugeliang } from '@/models/heros';
+import { sunquan, zhaoyun, zhugeliang } from '../models/heros';
 import { getBuffSelectionPriority, getBestHeroForSummonBuff, isBuffApplicable } from '../conditions/CanChooseBuff';
 import { log } from '..';
 

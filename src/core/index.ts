@@ -1,19 +1,17 @@
-import { GameMap, GameState } from "@/types";
+import { GameMap, GameState } from "../types";
 import { BehaviorTreeController } from "../bt/BehaviorTreeController";
 import { ActionContext, IAgent } from "./types";
 import { Agent } from "./Agent";
-import { sunquan, zhaoyun, zhugeliang } from "@/models/heros";
-import ActionBuilder from "@/network/ActionBuilder";
+import { sunquan, zhaoyun, zhugeliang } from "../models/heros";
+import ActionBuilder from "../network/ActionBuilder";
 import { TeamBlackboard } from "./TeamBlackboard";
 import NetworkClient from "../network/NetworkClient";
 import { log } from "console";
 
 const context: ActionContext = {
+    playerId: 0,
     agent: null,
-    gameMap: null,
-    allAgents: [],
-    treeDefinition: null,
-    debug: false
+    teamBlackboard: null as unknown as TeamBlackboard,
 }
 
 export function init(client: NetworkClient, playerId: number) {
@@ -28,6 +26,8 @@ export function init(client: NetworkClient, playerId: number) {
     teamBlackboard.setTeam(warrior, support, leader);
     // 初始化上下文
     context.teamBlackboard = teamBlackboard;
+    context.playerId = playerId;
+    
     // 关联网络客户端，让网络客户端可以更新团队黑板的数据
     client.setTeamBlackboard(teamBlackboard);
     log(`初始化成功: ${playerId}`);

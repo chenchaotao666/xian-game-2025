@@ -124,9 +124,6 @@ export interface IAgent {
 export interface ActionContext {
   playerId: number;                          // 玩家ID
   agent: IAgent | null;                       // 当前执行行为的代理（或其模拟状态）
-  gameMap: GameMap;                           // 方便动作和考量因素访问地图信息
-  potentialTarget?: IAgentState;              // 行为的潜在目标（或其模拟状态）
-  skillId?: string;                           // 涉及的技能ID（如果适用）
   destination?: { x: number, y: number };    // 潜在的目的地 (用于移动行为)
   teamBlackboard: TeamBlackboard;            // 所属队伍的黑板，用于共享信息
 }

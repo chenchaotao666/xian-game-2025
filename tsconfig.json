@@ -37,14 +37,7 @@
     "emitDecoratorMetadata": true,              // 发出装饰器元数据
     
     // 路径映射
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["src/*"],
-      "@core/*": ["src/core/*"],
-      "@ai/*": ["src/ai/*"],
-      "@entities/*": ["src/entities/*"],
-      "@network/*": ["src/network/*"]
-    }
+    "baseUrl": "./"
   },
   "include": [
     "src/**/*",
