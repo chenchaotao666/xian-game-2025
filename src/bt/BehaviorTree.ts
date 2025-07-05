@@ -49,7 +49,7 @@ export const teamBehaviorTree = `root {
   }
 }`
 
-export const heroBehaviorTree = `root  /* 紧急逃生 */
+export const heroBehaviorTree = `root {
     /* 基于策略的行为 */
     selector {
         /* 主动攻击策略 */

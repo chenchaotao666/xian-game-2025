@@ -56,15 +56,12 @@ export class BehaviorTreeController {
    */
   public takeTurn(): void {
 
-    log(`开始执行行为树..`);
-
     try {
       // 执行行为树
       this.behaviorTree.step();
 
       // 检查行为树是否已完成
       if (!this.behaviorTree.isRunning()) {
-        log('行为树执行完成，重置树状态');
         this.behaviorTree.reset();
       }
 

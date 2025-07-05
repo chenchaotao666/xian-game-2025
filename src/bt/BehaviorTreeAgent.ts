@@ -97,15 +97,15 @@ export class BehaviorTreeAgent implements IBehaviorTreeNodes {
     this.context.agent = null;
   }
 
-  public executeWarriorActions(): void {
+  public ExecuteWarriorActions(): void {
     this.executeHeroBehaviorTree(this.context.teamBlackboard.warrior);
   }
 
-  public executeLeaderActions(): void {
+  public ExecuteLeaderActions(): void {
     this.executeHeroBehaviorTree(this.context.teamBlackboard.leader);
   }
   
-  public executeSupportActions(): void {
+  public ExecuteSupportActions(): void {
     this.executeHeroBehaviorTree(this.context.teamBlackboard.support);
   }
 

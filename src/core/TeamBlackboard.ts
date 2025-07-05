@@ -286,8 +286,6 @@ export class TeamBlackboard {
     
     // 找到敌方玩家ID
     this.enemyPlayerId = gameStateData.players.find(p => p.playerId !== myPlayerId)?.playerId || null;
-    
-    console.log(`[团队黑板] 更新游戏状态 - 回合: ${gameStateData.round}, 我方ID: ${myPlayerId}, 敌方ID: ${this.enemyPlayerId}`);
   }
 
   public getPlayerId(): number {

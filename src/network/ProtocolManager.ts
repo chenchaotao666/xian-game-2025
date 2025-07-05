@@ -258,8 +258,6 @@ class ProtocolManager extends EventEmitter {
      * @param message 解析后的消息对象
      */
     private async handleMessage(message: ProtocolMessage): Promise<void> {
-        console.log(`[协议管理器] 收到消息: ${message.msg_name}`);
-        
         switch (message.msg_name) {
             case 'start':
                 // 触发gameStart事件

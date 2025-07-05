@@ -8,6 +8,7 @@ import MessageParser from './MessageParser';
 import ActionBuilder from './ActionBuilder';
 import { EventEmitter } from 'events';
 import { TeamBlackboard } from '../core/TeamBlackboard.js';
+import { log } from 'src';
 
 /**
  * 网络客户端主类
@@ -208,6 +209,11 @@ class NetworkClient extends EventEmitter {
         try {
             if (!Array.isArray(actions)) {
                 throw new Error('行动指令必须是数组');
+            }
+
+            if( actions.length === 0 ) {
+                log('[网络客户端] 没有行动指令，跳过', 'warn');
+                return true;
             }
 
             // 验证所有行动指令
