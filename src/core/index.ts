@@ -20,9 +20,9 @@ export function init(client: NetworkClient, playerId: number) {
     // 创建团队黑板
     const teamBlackboard = new TeamBlackboard();
     
-    const warrior = new Agent(zhaoyun, { x: 0, y: 0 }, playerId, teamBlackboard);
-    const support = new Agent(sunquan, { x: 0, y: 0 }, playerId, teamBlackboard);
-    const leader = new Agent(zhugeliang, { x: 0, y: 0 }, playerId, teamBlackboard);
+    const warrior = new Agent(zhaoyun, { x: 0, y: 0 }, client.gameState.camp, teamBlackboard);
+    const support = new Agent(sunquan, { x: 0, y: 0 }, client.gameState.camp, teamBlackboard);
+    const leader = new Agent(zhugeliang, { x: 0, y: 0 }, client.gameState.camp, teamBlackboard);
     teamBlackboard.setTeam(warrior, support, leader);
     // 初始化上下文
     context.teamBlackboard = teamBlackboard;

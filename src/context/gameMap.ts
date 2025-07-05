@@ -1,4 +1,5 @@
 import type { Position } from '../core/types';
+import MessageParser from '../network/MessageParser.js';
 
 /**
  * 距离计算方法类型
@@ -9,6 +10,7 @@ export type DistanceMethod = (x1: number, y1: number, x2: number, y2: number) =>
 /**
  * 切比雪夫距离计算函数
  * 计算两点之间的切比雪夫距离（棋盘距离），允许对角线移动
+ * 按照游戏规则，距离计算公式为 max(Δx, Δy)
  * @param x1 起点X坐标
  * @param y1 起点Y坐标
  * @param x2 终点X坐标
@@ -20,14 +22,68 @@ export const chebyshevDistance: DistanceMethod = (x1: number, y1: number, x2: nu
 };
 
 /**
- * 地图瓦片类型枚举
- * 定义地图中不同类型的瓦片
+ * 地图地形类型枚举
+ * 按照游戏规则和通讯协议定义
  */
-export enum TileType {
-  Empty = 0,    // 空地，可通行
-  Wall = 1,     // 墙壁，不可通行
-  // weapon     // 武器（预留）
-  // enemy      // 敌人（预留）
+export enum TerrainType {
+  SPACE = 0,        // 空地 - 可行军的空地
+  MOUNT = 1,        // 山丘 - 山（障碍物）
+  WATER = 2,        // 水域 - 水（障碍物）
+  FLAG = 3,         // 龙旗据点 - 玩家可占领的据点
+  CITY = 4,         // 中立城寨 - 通用城寨标识
+  BASE = 5,         // 主基地 - 玩家出生基地
+  SMALL_CITY = 50,  // 中立城寨（一级）
+  MIDDLE_CITY = 51, // 中立城寨（二级）
+  BIG_CITY = 52     // 中立城寨（三级）
+}
+
+/**
+ * 地图网格单元接口
+ */
+export interface MapCell {
+  x: number;
+  y: number;
+  terrain: TerrainType;
+  terrainName: string;
+  walkable: boolean;
+  hasUnit?: boolean;        // 是否有单位占据
+  unitId?: number;          // 占据单位的ID
+}
+
+/**
+ * 城寨信息接口
+ */
+export interface CityInfo {
+  roleId: number;           // 城寨角色ID (50/51/52)
+  position: Position;       // 城寨位置
+  life: number;            // 当前城防值
+  maxLife: number;         // 最大城防值
+  damage: number;          // 攻击伤害值
+  attackRange: number;     // 攻击距离
+  reward: number;          // 粮草奖励
+  respawnRound: number;    // 重生回合（被攻陷后100回合重生）
+  isDestroyed: boolean;    // 是否被摧毁
+}
+
+/**
+ * 据点信息接口
+ */
+export interface StrongholdInfo {
+  roleId: number;          // 据点角色ID (3)
+  position: Position;      // 据点位置（3x3区域的中心）
+  camp: number;           // 所属阵营（0/1/2，2表示中立）
+  occupiedRound: [number, number]; // 占领进度数组 [红方回合数, 蓝方回合数]
+  isAvailable: boolean;   // 是否可占领（100回合后开放）
+  openRound: number;      // 开放回合数
+}
+
+/**
+ * 特殊地形位置信息
+ */
+export interface SpecialLocations {
+  flags: Position[];       // 龙旗据点位置
+  cities: Position[];      // 城寨位置
+  bases: Position[];       // 主基地位置
 }
 
 /**
@@ -44,14 +100,19 @@ interface Node {
 }
 
 /**
- * 游戏地图类
- * 管理游戏地图的表示、路径查找和碰撞检测
+ * 三国策略对战游戏地图类
+ * 管理80×60的游戏地图，包括地形、单位位置、城寨和据点管理
+ * 集成了地图同步功能，可处理服务器发送的地图数据
  */
 export class GameMap {
-  private map: TileType[][];        // 当前地图状态
-  private rawMap: TileType[][];     // 原始地图数据
-  private readonly width: number;   // 地图宽度
-  private readonly height: number;  // 地图高度
+  private map: MapCell[][];           // 当前地图状态
+  private rawMap: MapCell[][];        // 原始地图数据
+  private readonly width: number;     // 地图宽度 (80)
+  private readonly height: number;    // 地图高度 (60)
+  private cities: Map<string, CityInfo>;      // 城寨信息映射
+  private stronghold: StrongholdInfo | null;  // 龙旗据点信息
+  private currentRound: number;       // 当前回合数
+  private lastSyncTime: number;       // 最后同步时间
 
   /**
    * 构造函数
@@ -62,8 +123,146 @@ export class GameMap {
   constructor(data: string, maxX: number, maxY: number) {
     this.width = maxX;
     this.height = maxY;
+    this.currentRound = 0;
+    this.lastSyncTime = 0;
+    this.cities = new Map();
+    this.stronghold = null;
+    
+    // 初始化地图数据
     this.map = this.convertMap(data, maxX, maxY);
-    this.rawMap = this.convertMap(data, maxX, maxY);
+    this.rawMap = this.deepCopyMap(this.map);
+    
+    // 初始化特殊地形
+    this.initializeSpecialTerrain();
+  }
+
+  /**
+   * 从服务器地图数据创建地图实例
+   * @param mapData 服务器发送的地图数据
+   * @returns 游戏地图实例
+   */
+  static fromServerData(mapData: any): GameMap {
+    console.log('从服务器数据初始化地图...', mapData);
+    
+    // 解析地图数据
+    const parsedMapData = MessageParser.parseMapData(mapData);
+    
+    // 创建游戏地图实例
+    const gameMap = new GameMap(
+      parsedMapData.rawData.join(','),
+      parsedMapData.width,
+      parsedMapData.height
+    );
+    
+    console.log(`地图初始化完成: ${parsedMapData.width}x${parsedMapData.height}`);
+    console.log(`特殊地形位置:`, parsedMapData.specialLocations);
+    
+    return gameMap;
+  }
+
+  /**
+   * 同步游戏状态
+   * @param gameState 服务器发送的游戏状态数据
+   */
+  syncGameState(gameState: any): void {
+    console.log(`同步第 ${gameState.round} 回合游戏状态...`);
+    
+    // 更新回合数
+    this.currentRound = gameState.round;
+    
+    // 更新地图状态
+    this.updateTurnMap();
+    
+    // 同步单位位置
+    this.syncUnitPositions(gameState.players);
+    
+    // 同步城寨状态
+    this.syncCityStates(gameState.cityProps);
+    
+    // 同步据点状态
+    this.syncStrongholdState(gameState.stronghold);
+    
+    this.lastSyncTime = Date.now();
+    
+    console.log(`第 ${gameState.round} 回合状态同步完成`);
+  }
+
+  /**
+   * 同步单位位置
+   * @param players 玩家数据数组
+   */
+  private syncUnitPositions(players: any[]): void {
+    // 清除旧的单位位置
+    this.clearAllUnitPositions();
+
+    // 设置新的单位位置
+    for (const player of players) {
+      for (const hero of player.roles) {
+        if (hero.position && hero.reviveRound === 0) {
+          const { x, y } = hero.position;
+          this.setUnit(x, y, hero.roleId);
+          
+          console.log(`英雄 ${hero.roleId} 位置: (${x}, ${y})`);
+        }
+      }
+    }
+  }
+
+  /**
+   * 同步城寨状态
+   * @param cityProps 城寨数据数组
+   */
+  private syncCityStates(cityProps: any[]): void {
+    for (const cityData of cityProps) {
+      if (cityData.position) {
+        const cityInfo = this.getCityInfo(cityData.position);
+        if (cityInfo) {
+          // 更新城寨生命值
+          cityInfo.life = cityData.life;
+          cityInfo.isDestroyed = cityData.life <= 0;
+          
+          if (cityInfo.isDestroyed && cityInfo.respawnRound === 0) {
+            // 如果城寨刚被摧毁，设置重生倒计时
+            cityInfo.respawnRound = 100;
+            console.log(`城寨在位置 (${cityData.position.x}, ${cityData.position.y}) 被摧毁`);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * 同步据点状态
+   * @param strongholdData 据点数据
+   */
+  private syncStrongholdState(strongholdData: any): void {
+    if (!strongholdData) return;
+
+    const strongholdInfo = this.getStrongholdInfo();
+    if (strongholdInfo) {
+      // 更新据点状态
+      strongholdInfo.camp = strongholdData.camp;
+      strongholdInfo.occupiedRound = strongholdData.occupiedRound;
+      strongholdInfo.isAvailable = strongholdData.position && 
+                                  strongholdData.position.x !== -1 && 
+                                  strongholdData.position.y !== -1;
+      
+      if (strongholdInfo.isAvailable) {
+        strongholdInfo.position = strongholdData.position;
+        console.log(`据点状态更新: 阵营=${strongholdInfo.camp}, 占领进度=[${strongholdInfo.occupiedRound.join(',')}]`);
+      }
+    }
+  }
+
+  /**
+   * 清除所有单位位置
+   */
+  private clearAllUnitPositions(): void {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        this.removeUnit(x, y);
+      }
+    }
   }
 
   /**
@@ -73,13 +272,156 @@ export class GameMap {
    * @param maxY 地图高度
    * @returns 二维地图数组
    */
-  private convertMap(data: string, maxX: number, maxY: number): TileType[][] {
+  private convertMap(data: string, maxX: number, maxY: number): MapCell[][] {
     const mapArrayData = data.trim().split(',').map(Number);
-    const mapData: number[][] = [];
-    for (let i = 0; i < maxY; i++) {
-      mapData.push(mapArrayData.slice(i * maxX, (i + 1) * maxX));
+    const mapData: MapCell[][] = [];
+    
+    for (let y = 0; y < maxY; y++) {
+      const row: MapCell[] = [];
+      for (let x = 0; x < maxX; x++) {
+        const index = y * maxX + x;
+        const terrainType = mapArrayData[index] as TerrainType;
+        
+        row.push({
+          x: x,
+          y: y,
+          terrain: terrainType,
+          terrainName: this.getTerrainName(terrainType),
+          walkable: this.isTerrainWalkable(terrainType),
+          hasUnit: false
+        });
+      }
+      mapData.push(row);
     }
+    
     return mapData;
+  }
+
+  /**
+   * 深拷贝地图数据
+   * @param map 要拷贝的地图
+   * @returns 深拷贝的地图
+   */
+  private deepCopyMap(map: MapCell[][]): MapCell[][] {
+    return map.map(row => row.map(cell => ({ ...cell })));
+  }
+
+  /**
+   * 初始化特殊地形（城寨和据点）
+   */
+  private initializeSpecialTerrain(): void {
+    // 初始化城寨信息
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const cell = this.map[y][x];
+        if (cell.terrain >= TerrainType.SMALL_CITY && cell.terrain <= TerrainType.BIG_CITY) {
+          this.initializeCityInfo(cell.terrain, { x, y });
+        } else if (cell.terrain === TerrainType.FLAG) {
+          this.initializeStrongholdInfo({ x, y });
+        }
+      }
+    }
+  }
+
+  /**
+   * 初始化城寨信息
+   * @param cityType 城寨类型
+   * @param position 城寨位置
+   */
+  private initializeCityInfo(cityType: TerrainType, position: Position): void {
+    const key = `${position.x},${position.y}`;
+    let cityInfo: CityInfo;
+
+    switch (cityType) {
+      case TerrainType.SMALL_CITY:
+        cityInfo = {
+          roleId: 50,
+          position,
+          life: 1000,
+          maxLife: 1000,
+          damage: 60,
+          attackRange: 3,
+          reward: 100,
+          respawnRound: 0,
+          isDestroyed: false
+        };
+        break;
+      case TerrainType.MIDDLE_CITY:
+        cityInfo = {
+          roleId: 51,
+          position,
+          life: 2000,
+          maxLife: 2000,
+          damage: 120,
+          attackRange: 4,
+          reward: 200,
+          respawnRound: 0,
+          isDestroyed: false
+        };
+        break;
+      case TerrainType.BIG_CITY:
+        cityInfo = {
+          roleId: 52,
+          position,
+          life: 3000,
+          maxLife: 3000,
+          damage: 180,
+          attackRange: 5,
+          reward: 400,
+          respawnRound: 0,
+          isDestroyed: false
+        };
+        break;
+      default:
+        return;
+    }
+
+    this.cities.set(key, cityInfo);
+  }
+
+  /**
+   * 初始化据点信息
+   * @param position 据点位置
+   */
+  private initializeStrongholdInfo(position: Position): void {
+    this.stronghold = {
+      roleId: 3,
+      position,
+      camp: 2, // 中立状态
+      occupiedRound: [0, 0],
+      isAvailable: false,
+      openRound: 100
+    };
+  }
+
+  /**
+   * 获取地形名称
+   * @param terrainType 地形类型
+   * @returns 地形名称
+   */
+  private getTerrainName(terrainType: TerrainType): string {
+    const names: Record<TerrainType, string> = {
+      [TerrainType.SPACE]: '空地',
+      [TerrainType.MOUNT]: '山丘',
+      [TerrainType.WATER]: '水域',
+      [TerrainType.FLAG]: '龙旗据点',
+      [TerrainType.CITY]: '中立城寨',
+      [TerrainType.BASE]: '主基地',
+      [TerrainType.SMALL_CITY]: '小型城寨',
+      [TerrainType.MIDDLE_CITY]: '中型城寨',
+      [TerrainType.BIG_CITY]: '大型城寨'
+    };
+    return names[terrainType] || '未知地形';
+  }
+
+  /**
+   * 检查地形是否可通行
+   * @param terrainType 地形类型
+   * @returns 是否可通行
+   */
+  private isTerrainWalkable(terrainType: TerrainType): boolean {
+    // 山丘和水域是障碍物，不可通行
+    return terrainType !== TerrainType.MOUNT && terrainType !== TerrainType.WATER;
   }
 
   /**
@@ -89,20 +431,31 @@ export class GameMap {
    * @returns 是否为有效位置
    */
   isValidPosition(x: number, y: number): boolean {
-    return !(x < 0 || y < 0 || x > this.width - 1 || y > this.height - 1);
+    return !(x < 0 || y < 0 || x >= this.width || y >= this.height);
   }
 
   /**
-   * 获取指定位置的瓦片类型
+   * 获取指定位置的地图单元
    * @param x X坐标
    * @param y Y坐标
-   * @returns 瓦片类型，如果位置无效则返回null
+   * @returns 地图单元，如果位置无效则返回null
    */
-  getTile(x: number, y: number): null | TileType {
+  getCell(x: number, y: number): MapCell | null {
     if (!this.isValidPosition(x, y)) {
       return null;
     }
-    return this.map[this.height - y - 1][x];
+    return this.map[y][x];
+  }
+
+  /**
+   * 获取指定位置的地形类型
+   * @param x X坐标
+   * @param y Y坐标
+   * @returns 地形类型，如果位置无效则返回null
+   */
+  getTerrain(x: number, y: number): TerrainType | null {
+    const cell = this.getCell(x, y);
+    return cell ? cell.terrain : null;
   }
 
   /**
@@ -112,31 +465,215 @@ export class GameMap {
    * @returns 是否为障碍物
    */
   isObstacle(x: number, y: number): boolean {
-    return !this.isValidPosition(x, y) || this.getTile(x, y) === TileType.Wall;
+    const cell = this.getCell(x, y);
+    return !cell || !cell.walkable;
   }
 
   /**
-   * 设置指定位置的瓦片类型
+   * 检查指定位置是否有单位
    * @param x X坐标
    * @param y Y坐标
-   * @param value 瓦片类型
+   * @returns 是否有单位
+   */
+  hasUnit(x: number, y: number): boolean {
+    const cell = this.getCell(x, y);
+    return cell ? cell.hasUnit || false : false;
+  }
+
+  /**
+   * 设置单位位置
+   * @param x X坐标
+   * @param y Y坐标
+   * @param unitId 单位ID
    * @returns 是否设置成功
    */
-  setTile(x: number, y: number, value: TileType): boolean {
-    if (!this.isValidPosition(x, y)) {
+  setUnit(x: number, y: number, unitId: number): boolean {
+    const cell = this.getCell(x, y);
+    if (!cell || !cell.walkable) {
       return false;
     }
-    this.map[this.height - y - 1][x] = value;
+    
+    cell.hasUnit = true;
+    cell.unitId = unitId;
+    return true;
+  }
+
+  /**
+   * 移除单位
+   * @param x X坐标
+   * @param y Y坐标
+   * @returns 是否移除成功
+   */
+  removeUnit(x: number, y: number): boolean {
+    const cell = this.getCell(x, y);
+    if (!cell) {
+      return false;
+    }
+    
+    cell.hasUnit = false;
+    cell.unitId = undefined;
     return true;
   }
 
   /**
    * 更新回合地图状态
-   * 将地图重置为原始状态
+   * 根据当前回合数更新地图状态，包括城寨重生、据点开放等
    */
-  updateTurnMap() {
-    this.map = this.rawMap.map(i => [...i]);
-    // TODO: 需要实现具体逻辑
+  updateTurnMap(): void {
+    this.currentRound++;
+    
+    // 更新城寨状态
+    this.updateCitiesStatus();
+    
+    // 更新据点状态
+    this.updateStrongholdStatus();
+    
+    // 清除单位位置信息（每回合重新设置）
+    this.clearUnitPositions();
+  }
+
+  /**
+   * 更新城寨状态
+   */
+  private updateCitiesStatus(): void {
+    for (const [key, city] of this.cities) {
+      if (city.isDestroyed && city.respawnRound > 0) {
+        city.respawnRound--;
+        if (city.respawnRound <= 0) {
+          // 城寨重生
+          city.isDestroyed = false;
+          city.life = city.maxLife;
+          console.log(`城寨在位置 (${city.position.x}, ${city.position.y}) 重生`);
+        }
+      }
+    }
+  }
+
+  /**
+   * 更新据点状态
+   */
+  private updateStrongholdStatus(): void {
+    if (this.stronghold && !this.stronghold.isAvailable && this.currentRound >= this.stronghold.openRound) {
+      this.stronghold.isAvailable = true;
+      console.log(`龙旗据点在第 ${this.currentRound} 回合开放占领`);
+    }
+  }
+
+  /**
+   * 清除单位位置信息
+   */
+  private clearUnitPositions(): void {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const cell = this.map[y][x];
+        cell.hasUnit = false;
+        cell.unitId = undefined;
+      }
+    }
+  }
+
+  /**
+   * 攻击城寨
+   * @param position 城寨位置
+   * @param damage 攻击伤害
+   * @returns 攻击结果信息
+   */
+  attackCity(position: Position, damage: number): { success: boolean; destroyed: boolean; reward: number } {
+    const key = `${position.x},${position.y}`;
+    const city = this.cities.get(key);
+    
+    if (!city || city.isDestroyed) {
+      return { success: false, destroyed: false, reward: 0 };
+    }
+    
+    city.life -= damage;
+    if (city.life <= 0) {
+      city.life = 0;
+      city.isDestroyed = true;
+      city.respawnRound = 100; // 100回合后重生
+      
+      console.log(`城寨在位置 (${position.x}, ${position.y}) 被摧毁，将在100回合后重生`);
+      return { success: true, destroyed: true, reward: city.reward };
+    }
+    
+    return { success: true, destroyed: false, reward: 0 };
+  }
+
+  /**
+   * 获取城寨信息
+   * @param position 城寨位置
+   * @returns 城寨信息
+   */
+  getCityInfo(position: Position): CityInfo | null {
+    const key = `${position.x},${position.y}`;
+    return this.cities.get(key) || null;
+  }
+
+  /**
+   * 获取据点信息
+   * @returns 据点信息
+   */
+  getStrongholdInfo(): StrongholdInfo | null {
+    return this.stronghold;
+  }
+
+  /**
+   * 更新据点占领状态
+   * @param camp 占领方阵营 (0: 红方, 1: 蓝方)
+   */
+  updateStrongholdOccupation(camp: number): void {
+    if (!this.stronghold || !this.stronghold.isAvailable) {
+      return;
+    }
+    
+    if (camp === 0) {
+      this.stronghold.occupiedRound[0]++;
+      this.stronghold.camp = 0;
+    } else if (camp === 1) {
+      this.stronghold.occupiedRound[1]++;
+      this.stronghold.camp = 1;
+    }
+  }
+
+  /**
+   * 获取地图尺寸
+   * @returns 地图尺寸信息
+   */
+  getMapSize(): { width: number; height: number } {
+    return { width: this.width, height: this.height };
+  }
+
+  /**
+   * 获取特殊地形位置
+   * @returns 特殊地形位置信息
+   */
+  getSpecialLocations(): SpecialLocations {
+    const flags: Position[] = [];
+    const cities: Position[] = [];
+    const bases: Position[] = [];
+    
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const cell = this.map[y][x];
+        const position = { x, y };
+        
+        switch (cell.terrain) {
+          case TerrainType.FLAG:
+            flags.push(position);
+            break;
+          case TerrainType.SMALL_CITY:
+          case TerrainType.MIDDLE_CITY:
+          case TerrainType.BIG_CITY:
+            cities.push(position);
+            break;
+          case TerrainType.BASE:
+            bases.push(position);
+            break;
+        }
+      }
+    }
+    
+    return { flags, cities, bases };
   }
 
   /**
@@ -293,10 +830,10 @@ export class GameMap {
     while (true) {
       // 检查当前格子 (currentX, currentY)
       // 我们不把起点格子本身视为对从该点发出的视线的遮挡物。
-      // 但路径上的任何其他格子（包括终点格子）如果是墙，则视为遮挡。
+      // 但路径上的任何其他格子（包括终点格子）如果是障碍物，则视为遮挡。
       if (currentX !== startX || currentY !== startY) {
-        if (this.getTile(currentX, currentY) === TileType.Wall) {
-          return false; // 视线被墙壁遮挡
+        if (this.isObstacle(currentX, currentY)) {
+          return false; // 视线被障碍物遮挡
         }
       }
 
@@ -324,5 +861,150 @@ export class GameMap {
       }
     }
     return true; // 视线未被遮挡
+  }
+
+  /**
+   * 获取当前回合数
+   * @returns 当前回合数
+   */
+  getCurrentRound(): number {
+    return this.currentRound;
+  }
+
+  /**
+   * 获取地图同步状态
+   * @returns 同步状态信息
+   */
+  getSyncStatus(): {
+    isInitialized: boolean;
+    currentRound: number;
+    lastSyncTime: number;
+    timeSinceLastSync: number;
+  } {
+    return {
+      isInitialized: true,
+      currentRound: this.currentRound,
+      lastSyncTime: this.lastSyncTime,
+      timeSinceLastSync: Date.now() - this.lastSyncTime
+    };
+  }
+
+  /**
+   * 检查位置是否可移动
+   * @param position 目标位置
+   * @returns 是否可移动
+   */
+  canMoveTo(position: Position): boolean {
+    const { x, y } = position;
+    
+    // 检查位置是否有效
+    if (!this.isValidPosition(x, y)) {
+      return false;
+    }
+
+    // 检查是否为障碍物
+    if (this.isObstacle(x, y)) {
+      return false;
+    }
+
+    // 检查是否有其他单位
+    if (this.hasUnit(x, y)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * 获取可移动的相邻位置
+   * @param position 当前位置
+   * @param range 移动范围（默认为1）
+   * @returns 可移动的位置数组
+   */
+  getMovablePositions(position: Position, range: number = 1): Position[] {
+    const movablePositions: Position[] = [];
+    const { x, y } = position;
+
+    // 检查八个方向的位置
+    for (let dx = -range; dx <= range; dx++) {
+      for (let dy = -range; dy <= range; dy++) {
+        if (dx === 0 && dy === 0) continue; // 跳过当前位置
+
+        const newX = x + dx;
+        const newY = y + dy;
+        const newPosition = { x: newX, y: newY };
+
+        if (this.canMoveTo(newPosition)) {
+          movablePositions.push(newPosition);
+        }
+      }
+    }
+
+    return movablePositions;
+  }
+
+  /**
+   * 计算两点间的距离
+   * @param pos1 位置1
+   * @param pos2 位置2
+   * @returns 切比雪夫距离
+   */
+  calculateDistance(pos1: Position, pos2: Position): number {
+    return Math.max(Math.abs(pos1.x - pos2.x), Math.abs(pos1.y - pos2.y));
+  }
+
+  /**
+   * 查找路径
+   * @param start 起始位置
+   * @param end 目标位置
+   * @returns 路径数组，如果无法到达则返回null
+   */
+  findPath(start: Position, end: Position): Position[] | null {
+    return this.findPathAStar(start.x, start.y, end.x, end.y);
+  }
+
+  /**
+   * 获取攻击范围内的目标
+   * @param position 攻击者位置
+   * @param range 攻击范围
+   * @returns 范围内的目标位置数组
+   */
+  getTargetsInRange(position: Position, range: number): Position[] {
+    const targets: Position[] = [];
+    const { x, y } = position;
+
+    for (let dx = -range; dx <= range; dx++) {
+      for (let dy = -range; dy <= range; dy++) {
+        if (dx === 0 && dy === 0) continue; // 跳过自身位置
+
+        const targetX = x + dx;
+        const targetY = y + dy;
+
+        // 检查距离是否在范围内（切比雪夫距离）
+        if (Math.max(Math.abs(dx), Math.abs(dy)) <= range) {
+          if (this.isValidPosition(targetX, targetY)) {
+            targets.push({ x: targetX, y: targetY });
+          }
+        }
+      }
+    }
+
+    return targets;
+  }
+
+  /**
+   * 重置地图状态
+   */
+  resetMap(): void {
+    this.currentRound = 0;
+    this.lastSyncTime = 0;
+    this.cities.clear();
+    this.stronghold = null;
+    
+    // 重新初始化地图
+    this.map = this.deepCopyMap(this.rawMap);
+    this.initializeSpecialTerrain();
+    
+    console.log('地图状态已重置');
   }
 }

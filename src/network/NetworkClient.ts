@@ -16,7 +16,7 @@ import { log } from 'src';
  */
 class NetworkClient extends EventEmitter {
     private protocolManager: any;
-    private gameState: any;
+    public gameState: any;
     private teamBlackboard: TeamBlackboard | null = null;  // 可选的TeamBlackboard实例
 
     constructor() {

@@ -50,7 +50,7 @@ export class AnalysisTools {
       // 将二维地图数组转换为字符串格式
       const mapData = MapLayout.flat().join(',');
       // 地图大小为16x16
-      this.gameMap = new GameMap(mapData, 16, 16);
+      this.gameMap = new GameMap(mapData, 80, 60);
     }
   }
 

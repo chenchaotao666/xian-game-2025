@@ -1,12 +1,11 @@
 // 行为树动作类导出
 export { AnalyzeAndSetStrategy } from './AnalyzeAndSetStrategy';
-export { ExecuteEscape } from './ExecuteEscape';
-export { ExecuteCapture } from './ExecuteCapture';
-export { ExecutePreparation } from './ExecutePreparation';
-export { ExecuteAttack } from './ExecuteAttack';
 
+export * from './SkillActions';
 // 游戏状态相关动作
-export { ExecutePickGenerals as executePickGeneral, ExecuteChooseBuff as executeChooseBuff, ExecuteTroopProduction, ExecuteFormationChange, ExecuteCaptureFlag } from './GameStateActions';
+export * from './GameStateActions';
+// 城寨相关动作
+export * from './FortressActions';
 
 // 战略动作
 export { ExecuteAttackEnemy, ExecuteAttackFortress } from './StrategicActions';
