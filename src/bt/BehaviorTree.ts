@@ -55,13 +55,7 @@ export const heroBehaviorTree = `root {
         /* 主动攻击策略 */
         sequence {
             condition [ShouldSeekEnemy]
-            selector {
-                sequence {
-                    condition [HasEnemyInRange]
-                    action [ExecuteAttackEnemy]
-                }
-                action [ExecuteSeekEnemy]
-            }
+            action [ExecuteSeekEnemy]
         }
 
         /* 争夺据点策略 */
@@ -73,13 +67,7 @@ export const heroBehaviorTree = `root {
         /* 刷城寨策略 */
         sequence {
             condition [ShouldAttackFortress]
-            selector {
-                sequence {
-                    condition [HasFortressInRange]
-                    action [ExecuteAttackFortress]
-                }
-                action [ExecuteSeekFortress]
-            }
+            action [ExecuteAttackFortress]
         }
     }
 }`

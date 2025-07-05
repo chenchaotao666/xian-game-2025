@@ -1,323 +1,225 @@
 import { State } from 'mistreevous';
 import { ActionContext } from '../core/types';
+import { StrategyType } from '../core/StrategyAnalysis';
+import { AnalysisTools } from '../core/AnalysisTools';
+import { log } from '../index';
 
 /**
- * 战略动作
- * ========
+ * 战略动作模块
+ * =============
  * 
- * 包含士兵生产、阵型切换、城寨攻击等战略层面的动作
+ * 实现具体的战略执行动作：
+ * - ExecuteAttackEnemy: 执行攻击敌方英雄
+ * - ExecuteAttackFortress: 执行攻击城寨
+ * 
+ * 每个动作都会：
+ * 1. 检查全局策略是否匹配
+ * 2. 从TeamBlackboard获取相应目标
+ * 3. 判断目标是否在攻击范围内
+ * 4. 在范围内则攻击，不在范围内则移动
  */
 
 /**
- * 执行士兵生产
- * 根据统帅值和当前需求生产士兵
+ * 执行攻击敌方英雄动作
+ * ===================
+ * 
+ * 检查当前策略是否为攻击敌方，如果是则：
+ * - 获取敌方攻击目标
+ * - 判断目标是否在攻击范围内
+ * - 在范围内则发起攻击，否则向目标移动
  */
-export function executeProduceTroops(context: ActionContext): State {
-  const { agent } = context;
-  
+export function ExecuteAttackEnemy(context: ActionContext): boolean {
   try {
-    const food = (agent as any).food || 0;
-    const troops = (agent as any).troops || [];
-    const generalStats = (agent as any).generalStats;
+    const { teamBlackboard, agent } = context;
     
-    // 检查是否有足够粮草（每名士兵20粮草）
-    if (food < 20) {
-      agent.log('粮草不足，无法生产士兵');
-      return State.FAILED;
+    if (!teamBlackboard || !agent) {
+      log('[战略动作] ExecuteAttackEnemy: 缺少必要的上下文信息');
+      return false;
     }
-    
-    // 检查是否还能容纳更多士兵
-    if (!generalStats || troops.length >= generalStats.leadership) {
-      agent.log('已达到统帅上限，无法生产更多士兵');
-      return State.FAILED;
-    }
-    
-    // 决定生产什么类型的士兵
-    const troopType = decideTroopType(context);
-    
-    // 计算要生产的数量（不超过统帅上限和粮草限制）
-    const maxByLeadership = generalStats.leadership - troops.length;
-    const maxByFood = Math.floor(food / 20);
-    const maxToProduce = Math.min(maxByLeadership, maxByFood, 3); // 一次最多生产3个
-    
-    if (maxToProduce <= 0) {
-      return State.FAILED;
-    }
-    
-    // 发送生产指令
-    const troopNumbers = decideTroopNumbers(context, maxToProduce, troopType);
-    (agent as any).sendCommand(`MAKE ${troopNumbers.archers} ${troopNumbers.shields}`);
-    agent.log(`生产士兵: ${troopNumbers.archers}弓兵 ${troopNumbers.shields}盾兵`);
-    
-    return State.SUCCEEDED;
-  } catch (error) {
-    agent.log(`士兵生产失败: ${error}`);
-    return State.FAILED;
-  }
-}
 
-/**
- * 执行阵型切换
- * 根据当前战况切换到合适的阵型
- */
-export function executeFormationChange(context: ActionContext): State {
-  const { agent } = context;
-  
-  try {
-    const morale = (agent as any).morale || 0;
-    const food = (agent as any).food || 0;
-    
-    // 检查是否有足够资源切换阵型
-    if (morale < 50 || food < 100) {
-      agent.log('士气或粮草不足，无法切换阵型');
-      return State.FAILED;
+    // 检查全局策略是否为攻击敌方
+    const currentStrategy = teamBlackboard.getCurrentStrategy();
+    if (currentStrategy !== StrategyType.FOCUS_FIRE && currentStrategy !== StrategyType.ATTACK_ENEMY) {
+      log(`[战略动作] ExecuteAttackEnemy: 当前策略(${currentStrategy})不是攻击敌方，跳过执行`);
+      return false;
     }
-    
-    // 决定切换到什么阵型
-    const newFormation = decideFormation(context);
-    if (!newFormation) {
-      return State.FAILED;
-    }
-    
-    // 发送阵型切换指令
-    (agent as any).sendCommand(`FORM ${newFormation}`);
-    agent.log(`切换阵型: ${newFormation}`);
-    
-    return State.SUCCEEDED;
-  } catch (error) {
-    agent.log(`阵型切换失败: ${error}`);
-    return State.FAILED;
-  }
-}
 
-/**
- * 执行攻打城寨
- * 攻打附近的城寨获取粮草
- */
-export function executeAttackFortress(context: ActionContext): State {
-  const { agent, gameMap } = context;
-  
-  try {
-    // 找到最近的可攻打城寨
-    const targetFortress = findNearestFortress(context);
-    if (!targetFortress) {
-      agent.log('附近没有可攻打的城寨');
-      return State.FAILED;
+    // 从TeamBlackboard获取敌方攻击目标
+    const enemyTarget = teamBlackboard.getEnemyTarget();
+    if (!enemyTarget) {
+      log('[战略动作] ExecuteAttackEnemy: 未找到敌方攻击目标');
+      return false;
     }
-    
-    // 检查距离是否在攻击范围内
-    const distance = agent.getDistanceToAgent(gameMap, { position: targetFortress });
-    if (distance > 5) { // 假设最大攻击距离是5
-      agent.log('目标城寨距离过远');
-      return State.FAILED;
+
+    // 获取目标英雄的详细信息
+    const targetHero = teamBlackboard.getHeroById(enemyTarget.targetEnemyId);
+    if (!targetHero || !targetHero.isAlive || !targetHero.position) {
+      log(`[战略动作] ExecuteAttackEnemy: 目标英雄${enemyTarget.targetEnemyId}无效或已阵亡`);
+      return false;
     }
-    
-    // 发送攻击城寨指令
-    (agent as any).sendCommand(`SG ${targetFortress.x} ${targetFortress.y}`);
-    agent.log(`攻击城寨: (${targetFortress.x}, ${targetFortress.y})`);
-    
-    return State.SUCCEEDED;
-  } catch (error) {
-    agent.log(`攻击城寨失败: ${error}`);
-    return State.FAILED;
-  }
-}
 
-/**
- * 执行空闲/发育动作
- * 当没有明确目标时的默认行为
- */
-export function executeIdle(context: ActionContext): State {
-  const { agent } = context;
-  
-  try {
-    // 执行一些基础的发育行为
-    // 例如：移动到安全位置、寻找资源等
-    
-    // 简化处理：记录日志
-    agent.log('执行发育行为：待机观察局势');
-    
-    return State.SUCCEEDED;
-  } catch (error) {
-    agent.log(`发育行为失败: ${error}`);
-    return State.FAILED;
-  }
-}
+    // 检查当前英雄是否有效
+    if (!agent.position) {
+      log('[战略动作] ExecuteAttackEnemy: 当前英雄位置无效');
+      return false;
+    }
 
-/**
- * 执行发育策略
- * 综合的发育行为，包括生产、移动等
- */
-export function executeDevelopment(context: ActionContext): State {
-  const { agent } = context;
-  
-  try {
-    // 优先检查是否需要生产士兵
-    const needTroops = needMoreTroops(context);
-    if (needTroops) {
-      const result = executeProduceTroops(context);
-      if (result === State.SUCCEEDED) {
-        return State.SUCCEEDED;
+    // 计算到目标的距离
+    const distance = AnalysisTools.calculateShortestDistance(agent.position, targetHero.position);
+    if (!distance.isReachable) {
+      log(`[战略动作] ExecuteAttackEnemy: 目标英雄${targetHero.roleId}不可达`);
+      return false;
+    }
+
+    // 获取攻击范围（默认为3）
+    const attackRange = 3;
+    
+    log(`[战略动作] ExecuteAttackEnemy: 目标英雄${targetHero.roleId}, 距离: ${distance.realDistance}, 攻击范围: ${attackRange}`);
+
+    // 判断是否在攻击范围内
+    if (distance.realDistance <= attackRange) {
+      // 在攻击范围内，发起攻击
+      if (agent.visibleEnemies.length > 0) {
+        const targetAgent = agent.visibleEnemies.find(enemy => enemy.id === targetHero.roleId);
+        if (targetAgent) {
+          agent.performAttack(targetAgent);
+          log(`[战略动作] ExecuteAttackEnemy: 成功攻击敌方英雄${targetHero.roleId}`);
+          return true;
+        }
       }
-    }
-    
-    // 检查是否需要寻找资源
-    const food = (agent as any).food || 0;
-    if (food < 300) {
-      // 寻找并移动到最近的资源点
-      const resourcePosition = findNearestResource(context);
-      if (resourcePosition) {
-        agent.log(`移动到资源点: (${resourcePosition.x}, ${resourcePosition.y})`);
-        return State.SUCCEEDED;
-      }
-    }
-    
-    // 默认发育行为
-    return executeIdle(context);
-  } catch (error) {
-    agent.log(`发育策略失败: ${error}`);
-    return State.FAILED;
-  }
-}
-
-// ============== 辅助函数 ==============
-
-/**
- * 决定要生产的士兵类型
- */
-function decideTroopType(context: ActionContext): 'balanced' | 'archer' | 'shield' {
-  const { agent } = context;
-  
-  // 根据当前局势决定士兵配比
-  const nearbyEnemies = agent.visibleEnemies?.length || 0;
-  
-  if (nearbyEnemies >= 2) {
-    // 敌人较多时优先生产盾兵
-    return 'shield';
-  } else if (nearbyEnemies === 1) {
-    // 有单个敌人时优先生产弓兵
-    return 'archer';
-  } else {
-    // 安全时平衡生产
-    return 'balanced';
-  }
-}
-
-/**
- * 决定具体的士兵数量分配
- * 优先为warrior配兵4弓兵2盾兵
- */
-function decideTroopNumbers(context: ActionContext, maxTotal: number, type: string): { archers: number; shields: number } {
-  const { agent } = context;
-  const generalType = (agent as any).generalType || 'balanced';
-  
-  // 如果是warrior类型，优先配置4弓兵2盾兵
-  if (generalType === 'warrior') {
-    const targetArchers = 4;
-    const targetShields = 2;
-    const totalTarget = targetArchers + targetShields;
-    
-    if (maxTotal >= totalTarget) {
-      // 可以配置完整的4弓兵2盾兵
-      return { archers: targetArchers, shields: targetShields };
+      // 如果找不到目标Agent，使用空闲动作
+      agent.performIdle();
+      log(`[战略动作] ExecuteAttackEnemy: 目标不在可见范围内，执行空闲动作`);
+      return true;
     } else {
-      // 空位不足时，按4:2比例分配
-      const archersRatio = 4 / 6; // 4/6 = 2/3
-      const archers = Math.round(maxTotal * archersRatio);
-      const shields = maxTotal - archers;
-      return { archers, shields };
+      // 不在攻击范围内，向目标移动
+      const moveResult = moveTowardsTarget(context, targetHero.position);
+      if (moveResult) {
+        log(`[战略动作] ExecuteAttackEnemy: 向敌方英雄${targetHero.roleId}移动`);
+        return true;
+      } else {
+        log(`[战略动作] ExecuteAttackEnemy: 向敌方英雄${targetHero.roleId}移动失败`);
+        return false;
+      }
     }
-  }
-  
-  // 其他类型武将的配兵逻辑
-  switch (type) {
-    case 'archer':
-      return { archers: maxTotal, shields: 0 };
-    case 'shield':
-      return { archers: 0, shields: maxTotal };
-    case 'balanced':
-    default:
-      const archers = Math.ceil(maxTotal / 2);
-      const shields = maxTotal - archers;
-      return { archers, shields };
+
+  } catch (error) {
+    log(`[战略动作] ExecuteAttackEnemy 执行失败: ${error}`);
+    return false;
   }
 }
 
 /**
- * 决定要切换的阵型
+ * 执行攻击城寨动作
+ * ================
+ * 
+ * 检查当前策略是否为攻击城寨，如果是则：
+ * - 获取城寨攻击目标
+ * - 判断目标是否在攻击范围内
+ * - 在范围内则发起攻击，否则向目标移动
  */
-function decideFormation(context: ActionContext): string | null {
-  const { agent } = context;
-  
-  const nearbyEnemies = agent.visibleEnemies?.filter(enemy => 
-    agent.getDistanceToAgent(context.gameMap, enemy) <= 5
-  ) || [];
-  
-  if (nearbyEnemies.length >= 2) {
-    // 多个敌人时切换到防御阵型
-    return '八卦阵';
-  } else if (nearbyEnemies.length === 1) {
-    // 单个敌人时切换到攻击阵型
-    return '鹤翼阵';
-  }
-  
-  return null;
-}
-
-/**
- * 找到最近的城寨
- */
-function findNearestFortress(context: ActionContext): { x: number; y: number } | null {
-  const { agent, gameMap } = context;
-  
-  // 这里需要根据实际的地图数据来查找城寨
-  // 简化处理：假设有一些固定的城寨位置
-  const fortresses = [
-    { x: 20, y: 20 },
-    { x: 60, y: 40 },
-    { x: 40, y: 10 }
-  ];
-  
-  let nearest = null;
-  let minDistance = Infinity;
-  
-  for (const fortress of fortresses) {
-    const distance = Math.max(
-      Math.abs(agent.position.x - fortress.x),
-      Math.abs(agent.position.y - fortress.y)
-    );
+export function ExecuteAttackFortress(context: ActionContext): boolean {
+  try {
+    const { teamBlackboard, agent } = context;
     
-    if (distance < minDistance) {
-      minDistance = distance;
-      nearest = fortress;
+    if (!teamBlackboard || !agent) {
+      log('[战略动作] ExecuteAttackFortress: 缺少必要的上下文信息');
+      return false;
     }
+
+    // 检查全局策略是否为攻击城寨
+    const currentStrategy = teamBlackboard.getCurrentStrategy();
+    if (currentStrategy !== StrategyType.ATTACK_CITY) {
+      log(`[战略动作] ExecuteAttackFortress: 当前策略(${currentStrategy})不是攻击城寨，跳过执行`);
+      return false;
+    }
+
+    // 从TeamBlackboard获取城寨攻击目标
+    const cityTarget = teamBlackboard.getCityTarget();
+    if (!cityTarget) {
+      log('[战略动作] ExecuteAttackFortress: 未找到城寨攻击目标');
+      return false;
+    }
+
+    // 获取目标城寨的详细信息
+    const targetCity = teamBlackboard.getCities().find(city => city.roleId === cityTarget.cityId);
+    if (!targetCity || !targetCity.position) {
+      log(`[战略动作] ExecuteAttackFortress: 目标城寨${cityTarget.cityId}无效或位置未知`);
+      return false;
+    }
+
+    // 检查当前英雄是否有效
+    if (!agent.position) {
+      log('[战略动作] ExecuteAttackFortress: 当前英雄位置无效');
+      return false;
+    }
+
+    // 计算到目标的距离
+    const distance = AnalysisTools.calculateShortestDistance(agent.position, targetCity.position);
+    if (!distance.isReachable) {
+      log(`[战略动作] ExecuteAttackFortress: 目标城寨${targetCity.roleId}不可达`);
+      return false;
+    }
+
+    // 获取攻击范围（默认为3）
+    const attackRange = 3;
+    
+    log(`[战略动作] ExecuteAttackFortress: 目标城寨${targetCity.cityType}(${targetCity.roleId}), 距离: ${distance.realDistance}, 攻击范围: ${attackRange}`);
+
+    // 判断是否在攻击范围内
+    if (distance.realDistance <= attackRange) {
+      // 在攻击范围内，执行攻击动作（对城寨使用空闲动作）
+      agent.performIdle();
+      log(`[战略动作] ExecuteAttackFortress: 对城寨${targetCity.cityType}(${targetCity.roleId})执行攻击`);
+      return true;
+    } else {
+      // 不在攻击范围内，向目标移动
+      const moveResult = moveTowardsTarget(context, targetCity.position);
+      if (moveResult) {
+        log(`[战略动作] ExecuteAttackFortress: 向城寨${targetCity.cityType}(${targetCity.roleId})移动`);
+        return true;
+      } else {
+        log(`[战略动作] ExecuteAttackFortress: 向城寨${targetCity.cityType}(${targetCity.roleId})移动失败`);
+        return false;
+      }
+    }
+
+  } catch (error) {
+    log(`[战略动作] ExecuteAttackFortress 执行失败: ${error}`);
+    return false;
   }
-  
-  return nearest;
 }
 
 /**
- * 找到最近的资源点
+ * 向目标移动
+ * @param context 动作上下文
+ * @param targetPosition 目标位置
+ * @returns 是否移动成功
  */
-function findNearestResource(context: ActionContext): { x: number; y: number } | null {
-  // 简化处理：资源点就是城寨位置
-  return findNearestFortress(context);
-}
+function moveTowardsTarget(context: ActionContext, targetPosition: { x: number; y: number }): boolean {
+  try {
+    const { agent } = context;
+    
+    if (!agent || !agent.position || !targetPosition) {
+      return false;
+    }
 
-/**
- * 检查是否需要更多士兵
- */
-function needMoreTroops(context: ActionContext): boolean {
-  const { agent } = context;
-  const troops = (agent as any).troops;
-  const generalStats = (agent as any).generalStats;
-  
-  if (!troops || !generalStats) {
+    // 计算目标方向
+    const deltaX = targetPosition.x - agent.position.x;
+    const deltaY = targetPosition.y - agent.position.y;
+    
+    // 计算移动的目标位置（向目标方向移动一格）
+    const moveX = agent.position.x + (deltaX > 0 ? 1 : deltaX < 0 ? -1 : 0);
+    const moveY = agent.position.y + (deltaY > 0 ? 1 : deltaY < 0 ? -1 : 0);
+    
+    const movePosition = { x: moveX, y: moveY };
+
+    // 执行移动
+    agent.performMove(context, movePosition);
     return true;
+
+  } catch (error) {
+    log(`[战略动作] moveTowardsTarget 执行失败: ${error}`);
+    return false;
   }
-  
-  const currentTroops = troops.length;
-  const maxTroops = generalStats.leadership;
-  
-  return currentTroops < maxTroops * 0.8;
-} 
+}

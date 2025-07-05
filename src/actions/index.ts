@@ -9,4 +9,4 @@ export { ExecuteAttack } from './ExecuteAttack';
 export { ExecutePickGenerals as executePickGeneral, ExecuteChooseBuff as executeChooseBuff, ExecuteTroopProduction, ExecuteFormationChange, ExecuteCaptureFlag } from './GameStateActions';
 
 // 战略动作
-export { executeProduceTroops, executeFormationChange, executeAttackFortress, executeIdle, executeDevelopment } from './StrategicActions';
+export { ExecuteAttackEnemy, ExecuteAttackFortress } from './StrategicActions';
