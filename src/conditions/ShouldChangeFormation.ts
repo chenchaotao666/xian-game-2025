@@ -1,6 +1,7 @@
 import { ActionContext } from '../core/types';
 import { TeamBlackboard } from '../core/TeamBlackboard';
 import { AnalysisTools } from '../core/AnalysisTools';
+import { getTeamBlackboard } from './utils';
 
 /**
  * 检查是否应该变换阵形
@@ -178,24 +179,4 @@ export function getMostSuitableHeroForFormationChange(context: ActionContext): n
   }).roleId;
 }
 
-/**
- * 从上下文获取TeamBlackboard实例
- */
-function getTeamBlackboard(context: ActionContext): TeamBlackboard | null {
-  if (context.teamBlackboard) {
-    return context.teamBlackboard as TeamBlackboard;
-  }
-  
-  if (context.agent && (context.agent as any).teamBlackboard) {
-    return (context.agent as any).teamBlackboard as TeamBlackboard;
-  }
-  
-  if (!context.agent && context.teamBlackboard) {
-    const tb = context.teamBlackboard as TeamBlackboard;
-    if (tb.warrior || tb.support || tb.leader) {
-      return tb;
-    }
-  }
-  
-  return null;
-}
+

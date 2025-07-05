@@ -572,10 +572,18 @@ export class TeamBlackboard {
    * @param targetId 目标ID，null表示取消集火
    */
   public setFocusTarget(targetId: string | null): void {
-    if (targetId && this.focusTarget) {
-      this.focusTarget.targetId = parseInt(targetId);
-      console.log(`[团队黑板]: 更新集火目标 ${targetId}`);
-    } else if (!targetId) {
+    if (targetId) {
+      // 创建或更新集火目标
+      this.focusTarget = {
+        targetId: parseInt(targetId),
+        targetType: 'enemy_hero', // 默认为敌方英雄
+        priority: 100,
+        reason: '策略分析设置的目标',
+        participatingHeroes: [],
+        setAt: this.getCurrentRound()
+      };
+      console.log(`[团队黑板]: 设置集火目标 ${targetId}`);
+    } else {
       this.focusTarget = null;
       console.log(`[团队黑板]: 取消集火目标`);
     }

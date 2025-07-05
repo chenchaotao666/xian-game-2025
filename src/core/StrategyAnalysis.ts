@@ -127,7 +127,6 @@ export class StrategyAnalysis {
   public analyzeGlobalStrategy(): StrategyDecision {
     const currentRound = this.blackboard.getCurrentRound();
     const myHeroes = this.blackboard.getMyAliveHeroes();
-    const enemyHeroes = this.blackboard.getEnemyAliveHeroes();
     
     console.log(`[策略分析] 开始全局策略分析 - 回合: ${currentRound}`);
 
@@ -195,16 +194,16 @@ export class StrategyAnalysis {
       }
     }
 
-         // 5. 资源管理（默认策略）
-     const myPlayer = this.blackboard.getMyPlayerData();
-     if (myPlayer && myPlayer.supplies < 100) {
-       strategies.push({
+    // 5. 资源管理（默认策略）
+    const myPlayer = this.blackboard.getMyPlayerData();
+    if (myPlayer && myPlayer.supplies < 100) {
+      strategies.push({
          type: StrategyType.RESOURCE_MANAGEMENT,
          priority: StrategyPriority.MEDIUM,
          assessment: { supplies: myPlayer.supplies },
          reason: `粮草不足(${myPlayer.supplies})，影响生产小兵和占领龙旗`
-       });
-     }
+      });
+    }
 
     // 按优先级排序并选择最佳策略
     strategies.sort((a, b) => b.priority - a.priority);

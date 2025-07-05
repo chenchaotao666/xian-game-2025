@@ -50,31 +50,8 @@ export const teamBehaviorTree = `root {
 }`
 
 export const heroBehaviorTree = `root  /* 紧急逃生 */
-    sequence {
-        condition [IsInCriticalDanger]
-        action [ExecuteEmergencyEscape]
-    }
-    
     /* 基于策略的行为 */
     selector {
-        /* 撤退策略 */
-        sequence {
-            condition [ShouldRetreat]
-            action [ExecuteRetreat]
-        }
-        
-        /* 争夺据点策略 */
-        sequence {
-            condition [ShouldGroupUp]
-            selector {
-                sequence {
-                    condition [IsNearDragonFlag]
-                    action [ExecuteFlagBattle]
-                }
-                action [ExecuteMoveToFlag]
-            }
-        }
-        
         /* 主动攻击策略 */
         sequence {
             condition [ShouldSeekEnemy]
@@ -84,6 +61,18 @@ export const heroBehaviorTree = `root  /* 紧急逃生 */
                     action [ExecuteAttackEnemy]
                 }
                 action [ExecuteSeekEnemy]
+            }
+        }
+
+        /* 争夺据点策略 */
+        sequence {
+            condition [ShouldGroupUp]
+            selector {
+                sequence {
+                    condition [IsInDragonFlag]
+                    action [ExecuteFlagBattle]
+                }
+                action [ExecuteMoveToFlag]
             }
         }
         
@@ -98,8 +87,5 @@ export const heroBehaviorTree = `root  /* 紧急逃生 */
                 action [ExecuteSeekFortress]
             }
         }
-        
-        /* 默认防守 */
-        action [ExecuteDefend]
     }
 }`
