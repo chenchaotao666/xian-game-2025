@@ -55,7 +55,6 @@ export const teamBehaviorTree = `root {
             }
         }
     }
-  }
 }`
 
 export const heroBehaviorTree = `root  /* 紧急逃生 */
