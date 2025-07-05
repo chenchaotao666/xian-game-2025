@@ -242,7 +242,7 @@ export class TeamBlackboard {
   private data: Map<string, any> = new Map();              // 通用数据存储
 
   // 游戏状态数据
-  private gameState: GameStateData | null = null;          // 当前游戏状态
+  public gameState: GameStateData | null = null;          // 当前游戏状态
   private myPlayerId: number | null = null;                // 我方玩家ID
   private enemyPlayerId: number | null = null;             // 敌方玩家ID
 

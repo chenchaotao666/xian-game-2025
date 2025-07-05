@@ -130,7 +130,7 @@ export function ExecuteTroopProduction(context: ActionContext): State {
     }
 
     // 获取当前玩家的游戏状态
-    const gameState = teamBlackboard.getData('gameState');
+    const gameState = teamBlackboard.gameState;
     if (!gameState || !gameState.players) {
       log('无法从团队黑板获取游戏状态');
       return State.FAILED;
