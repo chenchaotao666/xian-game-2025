@@ -72,31 +72,6 @@ export function HasEnemyInRange(context: ActionContext): boolean {
 }
 
 /**
- * 检查指定英雄是否有敌人在攻击范围内
- * @param hero 要检查的英雄
- * @param context 行为树上下文
- * @returns 是否有敌人在攻击范围内
- */
-export function hasEnemyInRangeForHero(hero: any, context: ActionContext): boolean {
-  if (!hero || !hero.isAlive || !hero.position) {
-    return false;
-  }
-
-  const teamBlackboard = getTeamBlackboard(context);
-  if (!teamBlackboard) return false;
-
-  const enemyHeroes = teamBlackboard.getEnemyAliveHeroes();
-  
-  // 检查是否有任何敌方英雄在攻击范围内
-  for (const enemy of enemyHeroes) {
-    if (checkTargetInAttackRange(hero, enemy)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
  * 检查目标英雄是否在当前英雄的攻击范围内
  * @param currentHero 当前英雄
  * @param targetHero 目标英雄
@@ -116,8 +91,6 @@ function checkTargetInAttackRange(currentHero: any, targetHero: any): boolean {
 
   return distance <= attackRange;
 }
-
-
 
 /**
  * 获取英雄的攻击范围

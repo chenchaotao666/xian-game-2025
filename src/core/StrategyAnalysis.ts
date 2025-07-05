@@ -65,8 +65,6 @@ export interface EnemyAttackAssessment {
   priority: number;
   powerComparison: number; // 我方实力 / 敌方实力
   avgDistance: number;
-  shouldGatherFirst: boolean;
-  gatherPosition: { x: number; y: number } | null;
   targetEnemyId: number | null;
   reason: string;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
@@ -164,7 +162,7 @@ export class StrategyAnalysis {
     // 2. 攻击敌方
     if (enemyAttackAssessment.shouldAttack) {
       strategies.push({
-        type: enemyAttackAssessment.shouldGatherFirst ? StrategyType.GATHER_FORCES : StrategyType.ATTACK_ENEMY,
+        type: StrategyType.ATTACK_ENEMY,
         priority: enemyAttackAssessment.priority,
         assessment: enemyAttackAssessment,
         reason: enemyAttackAssessment.reason
@@ -350,8 +348,6 @@ export class StrategyAnalysis {
       priority: 0,
       powerComparison: 0,
       avgDistance: 999,
-      shouldGatherFirst: false,
-      gatherPosition: null,
       targetEnemyId: null,
       reason: '条件不满足',
       riskLevel: 'HIGH'
@@ -390,11 +386,6 @@ export class StrategyAnalysis {
 
     const avgDistance = distances.length > 0 ? distances.reduce((sum, d) => sum + d, 0) / distances.length : 999;
 
-    // 判断是否需要先集合
-    const heroPositions = myHeroes.filter(h => h.position).map(h => h.position!);
-    const shouldGatherFirst = this.shouldGatherForces(heroPositions);
-    const gatherPosition = shouldGatherFirst ? this.calculateOptimalGatherPosition(heroPositions, enemyHeroes) : null;
-
     // 决策逻辑
     let shouldAttack = false;
     let priority = 0;
@@ -426,14 +417,9 @@ export class StrategyAnalysis {
 
     // 距离考量
     if (avgDistance > 15 && shouldAttack) {
-      if (!shouldGatherFirst) {
-        priority -= 20;
-        reason += '距离较远，需要考虑行军时间; ';
-      }
+      priority -= 20;
+      reason += '距离较远，需要考虑行军时间; ';
     }
-
-         // 攻击敌方不需要消耗粮草，移除粮草限制
-     // 粮草只在生产小兵和占领龙旗时才需要考虑
 
     // 英雄血量考量
     const avgHealthPercentage = myHeroes.reduce((sum, h) => sum + h.healthPercentage, 0) / myHeroes.length;
@@ -448,8 +434,6 @@ export class StrategyAnalysis {
       priority: Math.max(0, priority),
       powerComparison,
       avgDistance,
-      shouldGatherFirst,
-      gatherPosition,
       targetEnemyId: closestEnemyId,
       reason: reason.trim() || '战略分析完成',
       riskLevel
@@ -692,70 +676,6 @@ export class StrategyAnalysis {
   }
 
   /**
-   * 判断是否需要集合兵力
-   */
-  private shouldGatherForces(heroPositions: Array<{ x: number; y: number }>): boolean {
-    if (heroPositions.length < 2) return false;
-
-    // 计算英雄之间的平均距离
-    let totalDistance = 0;
-    let pairCount = 0;
-
-    for (let i = 0; i < heroPositions.length; i++) {
-      for (let j = i + 1; j < heroPositions.length; j++) {
-        const dist = AnalysisTools.calculateShortestDistance(heroPositions[i], heroPositions[j]);
-        if (dist.isReachable) {
-          totalDistance += dist.realDistance;
-          pairCount++;
-        }
-      }
-    }
-
-    const avgDistance = pairCount > 0 ? totalDistance / pairCount : 0;
-    
-    // 如果平均距离大于10，建议集合
-    return avgDistance > 10;
-  }
-
-  /**
-   * 计算最优集合位置
-   */
-  private calculateOptimalGatherPosition(
-    heroPositions: Array<{ x: number; y: number }>,
-    enemyHeroes: any[]
-  ): { x: number; y: number } | null {
-    if (heroPositions.length === 0) return null;
-
-    // 计算英雄的中心位置
-    const centerX = Math.round(heroPositions.reduce((sum, pos) => sum + pos.x, 0) / heroPositions.length);
-    const centerY = Math.round(heroPositions.reduce((sum, pos) => sum + pos.y, 0) / heroPositions.length);
-
-    // 找到距离中心最近且安全的位置
-    const candidates = AnalysisTools.getReachablePositionsInRange({ x: centerX, y: centerY }, 5);
-    
-    for (const candidate of candidates) {
-      // 检查该位置是否远离敌方英雄
-      let isSafe = true;
-      for (const enemy of enemyHeroes) {
-        if (enemy.position) {
-          const dist = AnalysisTools.calculateShortestDistance(candidate.position, enemy.position);
-          if (dist.isReachable && dist.realDistance < 8) {
-            isSafe = false;
-            break;
-          }
-        }
-      }
-      
-      if (isSafe) {
-        return candidate.position;
-      }
-    }
-
-    // 如果没有安全位置，返回中心位置
-    return { x: centerX, y: centerY };
-  }
-
-  /**
    * 创建策略决策对象
    */
   private createStrategyDecision(
@@ -785,15 +705,6 @@ export class StrategyAnalysis {
           '寻找攻击机会'
         ];
         confidence = Math.min(90, 50 + details.powerComparison * 20);
-        break;
-
-      case StrategyType.GATHER_FORCES:
-        executionPlan = [
-          '向集合点移动',
-          '等待所有英雄到位',
-          '重新评估战局'
-        ];
-        confidence = 80;
         break;
 
       case StrategyType.FOCUS_FIRE:

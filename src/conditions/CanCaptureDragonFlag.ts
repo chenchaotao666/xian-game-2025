@@ -2,14 +2,16 @@ import { ActionContext } from '../core/types';
 import { TeamBlackboard } from '../core/TeamBlackboard';
 import { StrategyType } from '../core/StrategyAnalysis';
 import { getTeamBlackboard } from './utils';
+import { log } from '../index';
 
 /**
  * 检查是否能够占领龙旗
  * =========================
  * 
- * 主要考虑两个因素：
+ * 主要考虑三个因素：
  * 1. 有足够的粮草支持占领行动
  * 2. 判断当前的全局策略是不是"占领龙旗"
+ * 3. 我方是否有英雄在龙旗位置上
  * 
  * @param context 行为树上下文
  * @returns 是否能够占领龙旗
@@ -18,19 +20,19 @@ export function CanCaptureDragonFlag(context: ActionContext): boolean {
   try {
     const teamBlackboard = getTeamBlackboard(context);
     if (!teamBlackboard) {
-      console.log('[龙旗占领] 无法获取团队黑板，无法占领');
+      log('[龙旗占领] 无法获取团队黑板，无法占领');
       return false;
     }
 
     const gameState = teamBlackboard.getGameStateSnapshot();
     if (!gameState) {
-      console.log('[龙旗占领] 游戏状态无效，无法占领');
+      log('[龙旗占领] 游戏状态无效，无法占领');
       return false;
     }
 
     const myPlayer = teamBlackboard.getMyPlayerData();
     if (!myPlayer) {
-      console.log('[龙旗占领] 无我方玩家数据，无法占领');
+      log('[龙旗占领] 无我方玩家数据，无法占领');
       return false;
     }
 
@@ -40,22 +42,30 @@ export function CanCaptureDragonFlag(context: ActionContext): boolean {
     // 2. 检查当前全局策略是否为占领龙旗
     const isCaptureFlagStrategy = checkIsCaptureFlagStrategy(teamBlackboard);
 
+    // 3. 检查我方是否有英雄在龙旗位置上
+    const hasHeroAtFlag = checkHasHeroAtFlagPosition(teamBlackboard);
+
     // 综合判断
     if (!hasEnoughSupplies) {
-      console.log('[龙旗占领] 粮草不足，无法占领龙旗');
+      log('[龙旗占领] 粮草不足，无法占领龙旗');
       return false;
     }
 
     if (!isCaptureFlagStrategy) {
-      console.log('[龙旗占领] 当前策略不是占领龙旗，暂不执行');
+      log('[龙旗占领] 当前策略不是占领龙旗，暂不执行');
       return false;
     }
 
-    console.log('[龙旗占领] 粮草充足且策略匹配，可以占领龙旗');
+    if (!hasHeroAtFlag) {
+      log('[龙旗占领] 我方没有英雄在龙旗位置上，无法占领');
+      return false;
+    }
+
+    log('[龙旗占领] 粮草充足、策略匹配且有英雄在龙旗位置，可以占领龙旗');
     return true;
 
   } catch (error) {
-    console.error(`[龙旗占领] 检查龙旗占领能力时发生错误: ${error}`);
+    log(`[龙旗占领] 检查龙旗占领能力时发生错误: ${error}`);
     return false;
   }
 }
@@ -82,131 +92,38 @@ function checkIsCaptureFlagStrategy(teamBlackboard: TeamBlackboard): boolean {
 }
 
 /**
- * 检查特定位置是否适合占领龙旗
- * @param heroId 英雄ID
- * @param context 行为树上下文
- * @returns 该英雄是否适合占领龙旗
+ * 检查我方是否有英雄在龙旗位置上
  */
-export function canHeroCaptureDragonFlag(heroId: number, context: ActionContext): boolean {
-  const teamBlackboard = getTeamBlackboard(context);
-  if (!teamBlackboard) return false;
-
-  const hero = teamBlackboard.getHeroById(heroId);
-  if (!hero || !hero.isAlive || !hero.position) return false;
-
-  // 检查英雄的基本状态
-  const isHealthy = hero.healthPercentage > 50; // 生命值要求
-  const isAvailable = hero.isAlive && !hero.isReviving; // 存活且未复活中
-
-  return isHealthy && isAvailable;
-}
-
-/**
- * 获取最适合占领龙旗的英雄ID
- * @param context 行为树上下文
- * @returns 最适合占领龙旗的英雄ID，如果没有则返回null
- */
-export function getBestHeroForDragonFlagCapture(context: ActionContext): number | null {
-  const teamBlackboard = getTeamBlackboard(context);
-  if (!teamBlackboard) return null;
-
+function checkHasHeroAtFlagPosition(teamBlackboard: TeamBlackboard): boolean {
+  const stronghold = teamBlackboard.getStronghold();
   const myHeroes = teamBlackboard.getMyAliveHeroes();
-  const stronghold = teamBlackboard.getStronghold();
-
-  if (myHeroes.length === 0 || !stronghold || !stronghold.position) return null;
-
-  // 筛选出适合占领的英雄
-  const suitableHeroes = myHeroes.filter(hero => 
-    hero.position && 
-    hero.isAlive && 
-    hero.healthPercentage > 50 &&
-    !hero.isReviving
-  );
-
-  if (suitableHeroes.length === 0) return null;
-
-  // 选择距离龙旗最近且实力较强的英雄
-  return suitableHeroes.reduce((best, current) => {
-    if (!best) return current;
-    
-    const bestDistance = Math.max(
-      Math.abs(best.position!.x - stronghold.position!.x),
-      Math.abs(best.position!.y - stronghold.position!.y)
-    );
-    
-    const currentDistance = Math.max(
-      Math.abs(current.position!.x - stronghold.position!.x),
-      Math.abs(current.position!.y - stronghold.position!.y)
-    );
-    
-    // 优先选择距离更近的英雄
-    if (currentDistance < bestDistance) return current;
-    if (currentDistance === bestDistance) {
-      // 距离相同时，选择生命值更高的英雄
-      if (current.healthPercentage > best.healthPercentage) return current;
-      // 生命值相同时，选择攻击力更高的英雄
-      if (current.healthPercentage === best.healthPercentage && current.attack > best.attack) {
-        return current;
-      }
-    }
-    
-    return best;
-  }).roleId;
-}
-
-/**
- * 检查占领龙旗的紧急程度
- * @param context 行为树上下文
- * @returns 紧急程度级别: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
- */
-export function getDragonFlagCaptureUrgency(context: ActionContext): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' {
-  const teamBlackboard = getTeamBlackboard(context);
-  if (!teamBlackboard) return 'LOW';
-
-  const stronghold = teamBlackboard.getStronghold();
-  const myPlayer = teamBlackboard.getMyPlayerData();
   
-  if (!stronghold || !myPlayer) return 'LOW';
-
-  // 如果敌方控制龙旗，紧急程度很高
-  if (stronghold.camp !== 0 && stronghold.camp !== myPlayer.playerId) {
-    return 'CRITICAL';
+  if (!stronghold || !stronghold.position || myHeroes.length === 0) {
+    log('[龙旗占领] 缺少龙旗位置或英雄数据');
+    return false;
   }
 
-  // 如果我方控制龙旗，紧急程度很低
-  if (stronghold.camp === myPlayer.playerId) {
-    return 'LOW';
+  // 检查是否有我方英雄在龙旗位置上
+  const heroesAtFlag = myHeroes.filter(hero => {
+    if (!hero.position || !hero.isAlive) return false;
+    
+    // 检查英雄是否在龙旗位置上（使用切比雪夫距离，距离为0表示在同一位置）
+    const distance = Math.max(
+      Math.abs(hero.position.x - stronghold.position!.x),
+      Math.abs(hero.position.y - stronghold.position!.y)
+    );
+    
+    return distance === 0;
+  });
+
+  if (heroesAtFlag.length > 0) {
+    const heroIds = heroesAtFlag.map(hero => hero.roleId);
+    log(`[龙旗占领] 我方英雄 ${heroIds.join(', ')} 在龙旗位置上`);
+    return true;
   }
 
-  // 龙旗中立状态，根据其他因素判断
-  const currentRound = teamBlackboard.getCurrentRound();
-  const enemyHeroes = teamBlackboard.getEnemyAliveHeroes();
-
-  // 检查敌方英雄距离龙旗的远近
-  let enemyNearFlag = 0;
-  if (stronghold.position) {
-    for (const enemy of enemyHeroes) {
-      if (enemy.position) {
-        const distance = Math.max(
-          Math.abs(enemy.position.x - stronghold.position.x),
-          Math.abs(enemy.position.y - stronghold.position.y)
-        );
-        if (distance <= 5) enemyNearFlag++;
-      }
-    }
-  }
-
-  // 游戏后期且有敌人接近龙旗
-  if (currentRound > 500 && enemyNearFlag > 0) {
-    return 'HIGH';
-  }
-
-  // 游戏中期，中等紧急程度
-  if (currentRound > 200) {
-    return 'MEDIUM';
-  }
-
-  return 'LOW';
+  log('[龙旗占领] 我方没有英雄在龙旗位置上');
+  return false;
 }
 
 

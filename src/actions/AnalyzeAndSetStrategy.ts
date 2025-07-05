@@ -16,7 +16,6 @@ import { AnalysisTools } from '../core/AnalysisTools';
  * 
  * 策略优先级：
  * - FOCUS_FIRE/ATTACK_ENEMY：选择距离最近的敌人（距离相同选血量少的）
- * - GATHER_FORCES：选择最优集合位置
  * - ATTACK_CITY：选择最优城寨目标
  * - CAPTURE_FLAG：选择龙旗位置
  */
@@ -80,7 +79,7 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
 }
 
 /**
- * 执行全局策略分析（简化版，去掉DEFENSIVE和RESOURCE_MANAGEMENT）
+ * 执行全局策略分析（简化版，去掉DEFENSIVE、RESOURCE_MANAGEMENT和GATHER_FORCES）
  */
 function analyzeGlobalStrategy(
   strategyAnalysis: StrategyAnalysis, 
@@ -92,12 +91,12 @@ function analyzeGlobalStrategy(
   // 如果没有存活英雄，等待复活
   if (myHeroes.length === 0) {
     return {
-      strategy: StrategyType.GATHER_FORCES,
+      strategy: StrategyType.ATTACK_ENEMY,
       priority: 20,
       confidence: 100,
       details: {},
-      reason: '我方无存活英雄，等待复活',
-      executionPlan: ['等待英雄复活']
+      reason: '我方无存活英雄，等待复活后攻击敌人',
+      executionPlan: ['等待英雄复活', '准备攻击敌人']
     };
   }
 
@@ -120,10 +119,10 @@ function analyzeGlobalStrategy(
     });
   }
 
-  // 2. 攻击敌方或集合兵力
+  // 2. 攻击敌方
   if (enemyAttackAssessment.shouldAttack) {
     strategies.push({
-      type: enemyAttackAssessment.shouldGatherFirst ? StrategyType.GATHER_FORCES : StrategyType.ATTACK_ENEMY,
+      type: StrategyType.ATTACK_ENEMY,
       priority: enemyAttackAssessment.priority,
       assessment: enemyAttackAssessment,
       reason: enemyAttackAssessment.reason
@@ -168,14 +167,14 @@ function analyzeGlobalStrategy(
     };
   }
 
-  // 默认策略：集合兵力
+  // 默认策略：攻击敌人
   return {
-    strategy: StrategyType.GATHER_FORCES,
+    strategy: StrategyType.ATTACK_ENEMY,
     priority: 30,
     confidence: 50,
     details: {},
-    reason: '无明确目标，集合兵力待命',
-    executionPlan: ['集合所有英雄', '等待机会']
+    reason: '无明确目标，默认攻击敌人',
+    executionPlan: ['搜索敌人', '发起攻击']
   };
 }
 
@@ -189,10 +188,6 @@ function setStrategyTarget(strategy: StrategyType, blackboard: TeamBlackboard): 
       setEnemyTarget(blackboard);
       break;
 
-    case StrategyType.GATHER_FORCES:
-      setGatherTarget(blackboard);
-      break;
-
     case StrategyType.ATTACK_CITY:
       setCityTarget(blackboard);
       break;
@@ -200,130 +195,61 @@ function setStrategyTarget(strategy: StrategyType, blackboard: TeamBlackboard): 
     case StrategyType.CAPTURE_FLAG:
       setFlagTarget(blackboard);
       break;
+
+    default:
+      log(`[策略分析] 未知策略类型: ${strategy}`);
+      break;
   }
 }
 
 /**
- * 设置敌方目标（距离最近，距离相同选血量少的）
+ * 设置敌人攻击目标
  */
 function setEnemyTarget(blackboard: TeamBlackboard): void {
   const myHeroes = blackboard.getMyAliveHeroes();
   const enemyHeroes = blackboard.getEnemyAliveHeroes();
   
   if (myHeroes.length === 0 || enemyHeroes.length === 0) {
-    log('[策略分析] 无法设置敌方目标：缺少英雄数据');
+    log('[策略分析] 无法设置敌人目标：缺少己方或敌方英雄');
     return;
   }
 
-  // 计算所有敌人与我方英雄的平均距离
-  const enemyDistances = enemyHeroes.map(enemy => {
-    if (!enemy.position) return { enemy, avgDistance: 999, minDistance: 999 };
-    
-    const distances = myHeroes
-      .filter(hero => hero.position)
-      .map(hero => {
-        const dist = AnalysisTools.calculateShortestDistance(hero.position!, enemy.position!);
-        return dist.isReachable ? dist.realDistance : 999;
-      });
-    
-    const avgDistance = distances.length > 0 ? distances.reduce((sum, d) => sum + d, 0) / distances.length : 999;
-    const minDistance = distances.length > 0 ? Math.min(...distances) : 999;
-    
-    return { enemy, avgDistance, minDistance };
-  });
+  // 计算每个敌人与我方英雄的平均距离
+  const enemyDistances = enemyHeroes
+    .filter(enemy => enemy.position)
+    .map(enemy => {
+      const distances = myHeroes
+        .filter(hero => hero.position)
+        .map(hero => {
+          const dist = AnalysisTools.calculateShortestDistance(hero.position!, enemy.position!);
+          return dist.isReachable ? dist.realDistance : 999;
+        });
+      
+      const avgDistance = distances.length > 0 ? distances.reduce((sum, d) => sum + d, 0) / distances.length : 999;
+      return { enemy, avgDistance };
+    })
+    .filter(item => item.avgDistance < 999);
 
-  // 过滤掉不可达的敌人
-  const reachableEnemies = enemyDistances.filter(item => item.avgDistance < 999);
-  
-  if (reachableEnemies.length === 0) {
-    log('[策略分析] 无可达的敌方目标');
+  if (enemyDistances.length === 0) {
+    log('[策略分析] 无可达的敌人目标');
     return;
   }
 
-  // 按平均距离排序，距离相同按血量排序（血量少的优先）
-  reachableEnemies.sort((a, b) => {
+  // 按距离排序，距离相同时按血量排序
+  enemyDistances.sort((a, b) => {
     if (Math.abs(a.avgDistance - b.avgDistance) < 0.1) {
-      // 距离相同，选血量少的
+      // 距离相同，选择血量少的
       return a.enemy.life - b.enemy.life;
     }
     return a.avgDistance - b.avgDistance;
   });
 
-  const targetEnemy = reachableEnemies[0].enemy;
+  const targetEnemy = enemyDistances[0].enemy;
   
-  // 传递完整的敌方英雄对象
+  // 传递完整的敌人对象
   blackboard.setFocusTarget(targetEnemy);
   
-  log(`[策略分析] 设置敌方目标: 英雄${targetEnemy.roleId} (血量: ${targetEnemy.life}/${targetEnemy.maxLife}, 距离: ${reachableEnemies[0].avgDistance.toFixed(1)})`);
-}
-
-/**
- * 设置集合位置目标
- */
-function setGatherTarget(blackboard: TeamBlackboard): void {
-  const myHeroes = blackboard.getMyAliveHeroes();
-  const enemyHeroes = blackboard.getEnemyAliveHeroes();
-  
-  if (myHeroes.length === 0) {
-    log('[策略分析] 无法设置集合目标：无存活英雄');
-    return;
-  }
-
-  // 计算我方英雄的中心位置
-  const validHeroes = myHeroes.filter(hero => hero.position);
-  if (validHeroes.length === 0) {
-    log('[策略分析] 无法设置集合目标：无有效位置的英雄');
-    return;
-  }
-
-  const centerX = validHeroes.reduce((sum, hero) => sum + hero.position!.x, 0) / validHeroes.length;
-  const centerY = validHeroes.reduce((sum, hero) => sum + hero.position!.y, 0) / validHeroes.length;
-  
-  // 如果有敌人，选择远离敌人的安全位置
-  let gatherPosition = { x: Math.round(centerX), y: Math.round(centerY) };
-  
-  if (enemyHeroes.length > 0) {
-    const enemyCenter = enemyHeroes
-      .filter(enemy => enemy.position)
-      .reduce((acc, enemy) => {
-        acc.x += enemy.position!.x;
-        acc.y += enemy.position!.y;
-        acc.count++;
-        return acc;
-      }, { x: 0, y: 0, count: 0 });
-    
-    if (enemyCenter.count > 0) {
-      enemyCenter.x /= enemyCenter.count;
-      enemyCenter.y /= enemyCenter.count;
-      
-      // 选择远离敌人的位置
-      const dx = centerX - enemyCenter.x;
-      const dy = centerY - enemyCenter.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      if (distance > 0) {
-        // 向远离敌人的方向偏移
-        const offsetX = (dx / distance) * 3;
-        const offsetY = (dy / distance) * 3;
-        gatherPosition = {
-          x: Math.round(centerX + offsetX),
-          y: Math.round(centerY + offsetY)
-        };
-      }
-    }
-  }
-
-  // 创建集合目标对象
-  const gatherTarget = {
-    position: gatherPosition,
-    purpose: '战术集合',
-    estimatedTime: 3,
-    participatingHeroes: validHeroes.map(hero => hero.roleId)
-  };
-  
-  blackboard.setFocusTarget(gatherTarget);
-  
-  log(`[策略分析] 设置集合目标: 位置(${gatherPosition.x}, ${gatherPosition.y})`);
+  log(`[策略分析] 设置敌人目标: 英雄${targetEnemy.roleId} (血量: ${targetEnemy.life}/${targetEnemy.maxLife}, 距离: ${enemyDistances[0].avgDistance.toFixed(1)})`);
 }
 
 /**
