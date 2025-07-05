@@ -12,6 +12,7 @@ import { AnalysisTools } from '../core/AnalysisTools';
  * 该动作负责：
  * 1. 调用 StrategyAnalysis 进行全局策略分析
  * 2. 根据策略类型选择最优目标并设置到 TeamBlackboard 中
+ * 2. 根据策略类型选择最优目标并设置到 TeamBlackboard 中
  * 3. 为后续的具体动作提供决策依据
  * 
  * 策略优先级：
@@ -51,6 +52,7 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
     // 将策略信息设置到团队黑板
     teamBlackboard.setGlobalStrategy(
       globalStrategy.strategy,
+      globalStrategy.details,
       globalStrategy.details,
       globalStrategy.priority,
       globalStrategy.confidence,
@@ -339,6 +341,7 @@ function setFlagTarget(blackboard: TeamBlackboard): void {
  */
 function logCurrentStrategyInfo(blackboard: TeamBlackboard): void {
   const currentStrategy = blackboard.getCurrentStrategy();
+  const focusTargetId = blackboard.getFocusTargetId();
   
   if (currentStrategy) {
     log(`[策略分析] 当前策略: ${currentStrategy}`);

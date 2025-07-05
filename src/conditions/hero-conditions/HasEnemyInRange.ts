@@ -40,27 +40,27 @@ export function HasEnemyInRange(context: ActionContext): boolean {
       return false;
     }
 
-    // 获取集火目标
-    const focusTarget = teamBlackboard.getFocusTarget();
-    if (!focusTarget || !focusTarget.targetId) {
-      console.log('[攻击范围检查] 没有集火目标');
+    // 获取敌方攻击目标
+    const enemyTarget = teamBlackboard.getEnemyTarget();
+    if (!enemyTarget || !enemyTarget.targetEnemyId) {
+      console.log('[攻击范围检查] 没有敌方攻击目标');
       return false;
     }
 
-    // 获取集火目标英雄的信息
-    const targetHero = teamBlackboard.getHeroById(focusTarget.targetId);
+    // 获取目标英雄的信息
+    const targetHero = teamBlackboard.getHeroById(enemyTarget.targetEnemyId);
     if (!targetHero || !targetHero.isAlive || !targetHero.position) {
-      console.log('[攻击范围检查] 集火目标英雄无效、已阵亡或位置未知');
+      console.log('[攻击范围检查] 目标英雄无效、已阵亡或位置未知');
       return false;
     }
 
-    // 检查集火目标是否在当前英雄的攻击范围内
+    // 检查目标是否在当前英雄的攻击范围内
     const isTargetInRange = checkTargetInAttackRange(currentHero, targetHero);
 
     if (isTargetInRange) {
-      console.log(`[攻击范围检查] 英雄${currentHero.roleId}可以攻击集火目标${targetHero.roleId}`);
+      console.log(`[攻击范围检查] 英雄${currentHero.roleId}可以攻击目标${targetHero.roleId}`);
     } else {
-      console.log(`[攻击范围检查] 英雄${currentHero.roleId}无法攻击集火目标${targetHero.roleId}，距离过远`);
+      console.log(`[攻击范围检查] 英雄${currentHero.roleId}无法攻击目标${targetHero.roleId}，距离过远`);
     }
 
     return isTargetInRange;
@@ -69,6 +69,31 @@ export function HasEnemyInRange(context: ActionContext): boolean {
     console.error(`[攻击范围检查] 检查攻击范围时发生错误: ${error}`);
     return false;
   }
+}
+
+/**
+ * 检查指定英雄是否有敌人在攻击范围内
+ * @param hero 要检查的英雄
+ * @param context 行为树上下文
+ * @returns 是否有敌人在攻击范围内
+ */
+export function hasEnemyInRangeForHero(hero: any, context: ActionContext): boolean {
+  if (!hero || !hero.isAlive || !hero.position) {
+    return false;
+  }
+
+  const teamBlackboard = getTeamBlackboard(context);
+  if (!teamBlackboard) return false;
+
+  const enemyHeroes = teamBlackboard.getEnemyAliveHeroes();
+  
+  // 检查是否有任何敌方英雄在攻击范围内
+  for (const enemy of enemyHeroes) {
+    if (checkTargetInAttackRange(hero, enemy)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
