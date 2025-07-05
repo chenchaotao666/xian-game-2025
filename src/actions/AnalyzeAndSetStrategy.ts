@@ -2,6 +2,7 @@ import { State } from 'mistreevous';
 import { ActionContext } from '../core/types';
 import { TeamBlackboard } from '../core/TeamBlackboard';
 import { StrategyAnalysis, StrategyType, StrategyDecision } from '../core/StrategyAnalysis';
+import { log } from '../index';
 
 /**
  * 分析并设置策略动作
@@ -21,18 +22,18 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
     // 获取团队黑板实例
     const teamBlackboard = (agent as any).teamBlackboard as TeamBlackboard;
     if (!teamBlackboard) {
-      agent.log('[策略分析] 错误：未找到团队黑板实例');
+      log('[策略分析] 错误：未找到团队黑板实例');
       return State.FAILED;
     }
 
     // 检查是否有有效的游戏状态数据
     const gameState = teamBlackboard.getGameStateSnapshot();
     if (!gameState) {
-      agent.log('[策略分析] 警告：游戏状态数据为空，跳过策略分析');
+      log('[策略分析] 警告：游戏状态数据为空，跳过策略分析');
       return State.SUCCEEDED; // 数据为空时不算失败，可能是游戏刚开始
     }
 
-    agent.log(`[策略分析] 开始策略分析 - 回合: ${gameState.round}`);
+    log(`[策略分析] 开始策略分析 - 回合: ${gameState.round}`);
 
     // 创建策略分析器
     const strategyAnalysis = new StrategyAnalysis(teamBlackboard);
@@ -41,9 +42,9 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
     const globalStrategy = strategyAnalysis.analyzeGlobalStrategy();
     
     // 记录策略决策
-    agent.log(`[策略分析] 全局策略决策: ${globalStrategy.strategy}`);
-    agent.log(`[策略分析] 优先级: ${globalStrategy.priority}, 置信度: ${globalStrategy.confidence}%`);
-    agent.log(`[策略分析] 决策理由: ${globalStrategy.reason}`);
+    log(`[策略分析] 全局策略决策: ${globalStrategy.strategy}`);
+    log(`[策略分析] 优先级: ${globalStrategy.priority}, 置信度: ${globalStrategy.confidence}%`);
+    log(`[策略分析] 决策理由: ${globalStrategy.reason}`);
 
     // 获取策略对应的详细数据
     const strategyData = getStrategyData(strategyAnalysis, globalStrategy.strategy);
@@ -62,9 +63,9 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
 
     // 记录执行计划
     if (globalStrategy.executionPlan && globalStrategy.executionPlan.length > 0) {
-      agent.log(`[策略分析] 执行计划:`);
+      log(`[策略分析] 执行计划:`);
       globalStrategy.executionPlan.forEach((step, index) => {
-        agent.log(`  ${index + 1}. ${step}`);
+        log(`  ${index + 1}. ${step}`);
       });
     }
 
@@ -74,7 +75,7 @@ export function AnalyzeAndSetStrategy(context: ActionContext): State {
     return State.SUCCEEDED;
 
   } catch (error) {
-    agent.log(`[策略分析] 分析失败: ${error}`);
+    log(`[策略分析] 分析失败: ${error}`);
     return State.FAILED;
   }
 }
@@ -161,7 +162,7 @@ function setAdditionalStrategyInfo(
       break;
   }
 
-  agent.log(`[策略分析] 策略信息已设置到团队黑板: ${strategy.strategy}`);
+  log(`[策略分析] 策略信息已设置到团队黑板: ${strategy.strategy}`);
 }
 
 /**
@@ -171,51 +172,51 @@ function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
   const currentStrategy = blackboard.getCurrentStrategy();
   
   if (currentStrategy) {
-    agent.log(`[策略分析] 当前策略: ${currentStrategy}`);
+    log(`[策略分析] 当前策略: ${currentStrategy}`);
     
     // 根据策略类型输出相应的目标信息
     switch (currentStrategy) {
       case StrategyType.FOCUS_FIRE:
         const focusTarget = blackboard.getFocusTarget();
         if (focusTarget) {
-          agent.log(`[策略分析] 集火目标: 英雄${focusTarget.targetId} (优先级: ${focusTarget.priority})`);
-          agent.log(`[策略分析] 集火理由: ${focusTarget.reason}`);
+          log(`[策略分析] 集火目标: 英雄${focusTarget.targetId} (优先级: ${focusTarget.priority})`);
+          log(`[策略分析] 集火理由: ${focusTarget.reason}`);
         }
         break;
         
       case StrategyType.ATTACK_CITY:
         const cityTarget = blackboard.getCityAttackTarget();
         if (cityTarget) {
-          agent.log(`[策略分析] 城寨目标: ${cityTarget.cityType} (ID: ${cityTarget.cityId})`);
-          agent.log(`[策略分析] 城寨血量: ${cityTarget.healthPercentage}%, 距离: ${cityTarget.distance}`);
-          agent.log(`[策略分析] 攻击理由: ${cityTarget.reason}`);
+          log(`[策略分析] 城寨目标: ${cityTarget.cityType} (ID: ${cityTarget.cityId})`);
+          log(`[策略分析] 城寨血量: ${cityTarget.healthPercentage}%, 距离: ${cityTarget.distance}`);
+          log(`[策略分析] 攻击理由: ${cityTarget.reason}`);
         }
         break;
         
       case StrategyType.ATTACK_ENEMY:
         const enemyTarget = blackboard.getEnemyAttackTarget();
         if (enemyTarget) {
-          agent.log(`[策略分析] 敌方目标: 英雄${enemyTarget.targetEnemyId}`);
-          agent.log(`[策略分析] 实力对比: ${enemyTarget.powerComparison.toFixed(2)}, 风险等级: ${enemyTarget.riskLevel}`);
-          agent.log(`[策略分析] 攻击理由: ${enemyTarget.reason}`);
+          log(`[策略分析] 敌方目标: 英雄${enemyTarget.targetEnemyId}`);
+          log(`[策略分析] 实力对比: ${enemyTarget.powerComparison.toFixed(2)}, 风险等级: ${enemyTarget.riskLevel}`);
+          log(`[策略分析] 攻击理由: ${enemyTarget.reason}`);
         }
         break;
         
       case StrategyType.GATHER_FORCES:
         const gatherPos = blackboard.getGatherPosition();
         if (gatherPos) {
-          agent.log(`[策略分析] 集合位置: (${gatherPos.position.x}, ${gatherPos.position.y})`);
-          agent.log(`[策略分析] 集合目的: ${gatherPos.purpose}`);
-          agent.log(`[策略分析] 预计时间: ${gatherPos.estimatedTime}回合`);
+          log(`[策略分析] 集合位置: (${gatherPos.position.x}, ${gatherPos.position.y})`);
+          log(`[策略分析] 集合目的: ${gatherPos.purpose}`);
+          log(`[策略分析] 预计时间: ${gatherPos.estimatedTime}回合`);
         }
         break;
         
       case StrategyType.CAPTURE_FLAG:
         const flagTarget = blackboard.getFlagCaptureTarget();
         if (flagTarget) {
-          agent.log(`[策略分析] 龙旗位置: (${flagTarget.flagPosition.x}, ${flagTarget.flagPosition.y})`);
-          agent.log(`[策略分析] 控制状态: ${flagTarget.controlStatus}, 风险: ${flagTarget.risk}`);
-          agent.log(`[策略分析] 占领理由: ${flagTarget.reason}`);
+          log(`[策略分析] 龙旗位置: (${flagTarget.flagPosition.x}, ${flagTarget.flagPosition.y})`);
+          log(`[策略分析] 控制状态: ${flagTarget.controlStatus}, 风险: ${flagTarget.risk}`);
+          log(`[策略分析] 占领理由: ${flagTarget.reason}`);
         }
         break;
     }
@@ -223,10 +224,10 @@ function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
     // 输出策略历史信息
     const recentHistory = blackboard.getRecentStrategyHistory(3);
     if (recentHistory.length > 1) {
-      agent.log(`[策略分析] 最近策略变化:`);
+      log(`[策略分析] 最近策略变化:`);
       recentHistory.slice(-3).forEach((entry, index) => {
         const result = entry.result ? ` (${entry.result})` : '';
-        agent.log(`  回合${entry.round}: ${entry.strategy}${result}`);
+        log(`  回合${entry.round}: ${entry.strategy}${result}`);
       });
     }
   }
