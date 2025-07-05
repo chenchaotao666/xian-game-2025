@@ -257,6 +257,10 @@ export class TeamBlackboard {
     console.log(`[团队黑板] 更新游戏状态 - 回合: ${gameStateData.round}, 我方ID: ${myPlayerId}, 敌方ID: ${this.enemyPlayerId}`);
   }
 
+  public getPlayerId(): number {
+    return this.myPlayerId || 0;
+  }
+
   /**
    * 设置全局策略及其对应数据
    * @param strategy 策略类型

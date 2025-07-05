@@ -70,7 +70,6 @@ async function startHumanClient(): Promise<void> {
             config.playerName
         );
         log('客户端连接成功', 'info');
-        log('等待玩家输入...', 'info');
     } catch (error) {
         log(`客户端连接失败: ${(error as Error).message}`, 'error');
         if (config.autoReconnect) {
