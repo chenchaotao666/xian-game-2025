@@ -123,14 +123,47 @@ interface StrongholdData {
  * 集火目标数据
  */
 interface FocusTargetData {
-  targetId: number;
-  targetType: 'enemy_hero' | 'city' | 'stronghold';
+  targetType: 'enemy_hero' | 'city' | 'stronghold' | 'gather_position';
   priority: number;
   reason: string;
-  expectedDamage?: number;
-  canEliminate?: boolean;
-  participatingHeroes: number[];
   setAt: number; // 设置时的回合数
+  
+  // 敌方英雄目标
+  heroTarget?: {
+    roleId: number;
+    position: { x: number; y: number } | null;
+    life: number;
+    maxLife: number;
+    attack: number;
+    camp: number;
+  };
+  
+  // 城寨目标
+  cityTarget?: {
+    roleId: number;
+    position: { x: number; y: number } | null;
+    cityType: string;
+    life: number;
+    maxLife: number;
+    healthPercentage: number;
+  };
+  
+  // 据点/龙旗目标
+  strongholdTarget?: {
+    roleId: number;
+    position: { x: number; y: number } | null;
+    camp: number;
+    campName: string;
+    isAvailable: boolean;
+  };
+  
+  // 集合位置目标
+  gatherTarget?: {
+    position: { x: number; y: number };
+    purpose: string;
+    estimatedTime: number;
+    participatingHeroes: number[];
+  };
 }
 
 /**
@@ -314,13 +347,9 @@ export class TeamBlackboard {
     switch (strategy) {
       case StrategyType.FOCUS_FIRE:
         this.focusTarget = {
-          targetId: data.primaryTargetId,
           targetType: 'enemy_hero',
           priority: data.priority,
           reason: data.reason,
-          expectedDamage: data.expectedDamage,
-          canEliminate: data.canEliminate,
-          participatingHeroes: data.secondaryTargets || [],
           setAt: round
         };
         break;
@@ -566,24 +595,89 @@ export class TeamBlackboard {
   }
 
   /**
-   * 设置团队集火目标（兼容旧接口）
-   * @param targetId 目标ID，null表示取消集火
+   * 设置团队集火目标
+   * @param target 目标对象，可以是敌方英雄、城寨、据点或集合位置
    */
-  public setFocusTarget(targetId: string | null): void {
-    if (targetId) {
-      // 创建或更新集火目标
-      this.focusTarget = {
-        targetId: parseInt(targetId),
-        targetType: 'enemy_hero', // 默认为敌方英雄
-        priority: 100,
-        reason: '策略分析设置的目标',
-        participatingHeroes: [],
-        setAt: this.getCurrentRound()
-      };
-      console.log(`[团队黑板]: 设置集火目标 ${targetId}`);
-    } else {
+  public setFocusTarget(target: any): void {
+    if (!target) {
       this.focusTarget = null;
       console.log(`[团队黑板]: 取消集火目标`);
+      return;
+    }
+
+    const currentRound = this.getCurrentRound();
+
+    // 根据目标类型创建相应的集火目标数据
+    if (target.roleId !== undefined && target.camp !== undefined) {
+      // 敌方英雄目标
+      if (target.camp !== (this.myPlayerId === 1 ? 1 : 2)) {
+        this.focusTarget = {
+          targetType: 'enemy_hero',
+          priority: 100,
+          reason: '选择距离最近的敌方英雄',
+          setAt: currentRound,
+          heroTarget: {
+            roleId: target.roleId,
+            position: target.position,
+            life: target.life,
+            maxLife: target.maxLife,
+            attack: target.attack,
+            camp: target.camp
+          }
+        };
+        console.log(`[团队黑板]: 设置敌方英雄目标 - 英雄${target.roleId}`);
+      }
+    } else if (target.cityType !== undefined) {
+      // 城寨目标
+      this.focusTarget = {
+        targetType: 'city',
+        priority: 90,
+        reason: '选择最优城寨攻击目标',
+        setAt: currentRound,
+        cityTarget: {
+          roleId: target.roleId,
+          position: target.position,
+          cityType: target.cityType,
+          life: target.life,
+          maxLife: target.maxLife,
+          healthPercentage: target.healthPercentage
+        }
+      };
+      console.log(`[团队黑板]: 设置城寨目标 - ${target.cityType}(${target.roleId})`);
+    } else if (target.campName !== undefined && target.isAvailable !== undefined) {
+      // 据点/龙旗目标
+      this.focusTarget = {
+        targetType: 'stronghold',
+        priority: 95,
+        reason: '占领龙旗据点',
+        setAt: currentRound,
+        strongholdTarget: {
+          roleId: target.roleId,
+          position: target.position,
+          camp: target.camp,
+          campName: target.campName,
+          isAvailable: target.isAvailable
+        }
+      };
+      console.log(`[团队黑板]: 设置龙旗目标 - 位置(${target.position?.x}, ${target.position?.y})`);
+    } else if (target.position !== undefined && target.purpose !== undefined) {
+      // 集合位置目标
+      this.focusTarget = {
+        targetType: 'gather_position',
+        priority: 80,
+        reason: '设置集合位置',
+        setAt: currentRound,
+        gatherTarget: {
+          position: target.position,
+          purpose: target.purpose,
+          estimatedTime: target.estimatedTime || 3,
+          participatingHeroes: target.participatingHeroes || []
+        }
+      };
+      console.log(`[团队黑板]: 设置集合目标 - 位置(${target.position.x}, ${target.position.y})`);
+    } else {
+      // 兼容旧的字符串ID格式（临时保留）
+      console.log(`[团队黑板]: 设置目标 - ${target}`);
     }
   }
 
@@ -592,7 +686,20 @@ export class TeamBlackboard {
    * @returns 目标ID或undefined
    */
   public getFocusTargetId(): string | undefined {
-    return this.focusTarget?.targetId.toString();
+    if (!this.focusTarget) return undefined;
+    
+    switch (this.focusTarget.targetType) {
+      case 'enemy_hero':
+        return this.focusTarget.heroTarget?.roleId.toString();
+      case 'city':
+        return this.focusTarget.cityTarget?.roleId.toString();
+      case 'stronghold':
+        return this.focusTarget.strongholdTarget?.roleId.toString();
+      case 'gather_position':
+        return `gather_${this.focusTarget.gatherTarget?.position.x}_${this.focusTarget.gatherTarget?.position.y}`;
+      default:
+        return undefined;
+    }
   }
 
   /**
