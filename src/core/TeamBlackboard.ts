@@ -230,6 +230,7 @@ export class TeamBlackboard {
   public warrior: Agent;
   public support: Agent;
   public leader: Agent;
+  public team: Agent[];
 
   constructor(public food: number = 100) {
   }
@@ -238,6 +239,7 @@ export class TeamBlackboard {
     this.warrior = warrior;
     this.support = support;
     this.leader = leader;
+    this.team = [warrior, support, leader];
   }
 
   /**
