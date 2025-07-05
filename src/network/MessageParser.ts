@@ -4,6 +4,8 @@
  */
 
 import { TERRAIN_TYPES, CAMP_TYPES, HERO_STATUS } from './ProtocolManager';
+import { TerrainType, MapCell, CityInfo, StrongholdInfo } from '../context/gameMap.js';
+import type { Position } from '../core/types.js';
 
 /**
  * 消息解析器类
@@ -56,46 +58,42 @@ class MessageParser {
      * @returns {Object} returns.specialLocations - 特殊地形位置信息
      */
     static parseMapData(mapData) {
-        if (!mapData.data || typeof mapData.maxX !== 'number' || typeof mapData.maxY !== 'number') {
-            throw new Error('地图数据格式错误：缺少data、maxX或maxY字段');
-        }
-
-        const terrainData = mapData.data.split(',').map(cell => parseInt(cell.trim(), 10));
-        const width = mapData.maxX + 1; // maxX是最大坐标，实际宽度要+1
-        const height = mapData.maxY + 1;
-
-        // if (terrainData.length !== width * height) {
-        //     throw new Error(`地图数据长度错误：期望${width * height}，实际${terrainData.length}`);
-        // }
-
-        // 构建二维地图数组
-        const grid = [];
+        const { data, maxX, maxY } = mapData;
+        
+        // 解析地形数据
+        const terrainData = data.split(',').map((item: string) => parseInt(item.trim()));
+        const width = maxX;
+        const height = maxY;
+        
+        // 构建二维地图网格
+        const grid: MapCell[][] = [];
+        
         for (let y = 0; y < height; y++) {
-            const row = [];
+            const row: MapCell[] = [];
             for (let x = 0; x < width; x++) {
                 const index = y * width + x;
-                const terrainType = terrainData[index];
+                const terrainType = terrainData[index] as TerrainType;
                 
                 row.push({
-                    x: x,                                             // 网格X坐标
-                    y: y,                                             // 网格Y坐标
-                    terrain: terrainType,                             // 地形类型数值
-                    terrainName: this.getTerrainName(terrainType),    // 地形中文名称
-                    walkable: this.isTerrainWalkable(terrainType)     // 是否可通行
+                    x: x,
+                    y: y,
+                    terrain: terrainType,
+                    terrainName: this.getTerrainName(terrainType),
+                    walkable: this.isTerrainWalkable(terrainType),
+                    hasUnit: false
                 });
             }
             grid.push(row);
         }
 
         return {
-            width: width,                                             // 地图宽度（格子数）
-            height: height,                                           // 地图高度（格子数）
-            maxX: mapData.maxX,                                       // 最大X坐标值
-            maxY: mapData.maxY,                                       // 最大Y坐标值
-            grid: grid,                                               // 二维地图网格数组
-            rawData: terrainData,                                     // 原始地形数据一维数组
-            // 提取特殊地形位置
-            specialLocations: this.extractSpecialLocations(grid)      // 特殊地形位置信息对象
+            width: width,
+            height: height,
+            maxX: mapData.maxX,
+            maxY: mapData.maxY,
+            grid: grid,
+            rawData: terrainData,
+            specialLocations: this.extractSpecialLocations(grid)
         };
     }
 
@@ -267,16 +265,15 @@ class MessageParser {
      * @returns {number} returns.healthPercentage - 血量百分比
      */
     static parseCityData(cityData) {
+        const cityInfo = this.getCityInfo(cityData.roleId);
+        
         return {
-            roleId: cityData.roleId,                                  // 城寨角色唯一ID
-            position: cityData.position ? {
-                x: cityData.position.x,                               // 城寨X坐标位置
-                y: cityData.position.y                                // 城寨Y坐标位置
-            } : null,
-            life: cityData.life || 0,                                 // 城寨当前生命值
-            maxLife: this.getCityMaxLife(cityData.roleId),           // 根据城寨类型获取最大血量
-            cityType: this.getCityType(cityData.roleId),             // 城寨类型中文名称
-            healthPercentage: this.getCityHealthPercentage(cityData.roleId, cityData.life) // 血量百分比
+            roleId: cityData.roleId,
+            position: cityData.position,
+            life: cityData.life,
+            maxLife: cityInfo.maxLife,
+            cityType: cityInfo.typeName,
+            healthPercentage: cityInfo.maxLife > 0 ? (cityData.life / cityInfo.maxLife) * 100 : 0
         };
     }
 
@@ -414,14 +411,17 @@ class MessageParser {
      * @param {number} terrainType - 地形类型
      * @returns {string} 地形名称
      */
-    static getTerrainName(terrainType) {
-        const names = {
-            [TERRAIN_TYPES.SPACE]: '空地',
-            [TERRAIN_TYPES.MOUNT]: '山丘',
-            [TERRAIN_TYPES.WATER]: '水域',
-            [TERRAIN_TYPES.FLAG]: '龙旗据点',
-            [TERRAIN_TYPES.CITY]: '中立城寨',
-            [TERRAIN_TYPES.BASE]: '主基地'
+    static getTerrainName(terrainType: TerrainType): string {
+        const names: Record<TerrainType, string> = {
+            [TerrainType.SPACE]: '空地',
+            [TerrainType.MOUNT]: '山丘',
+            [TerrainType.WATER]: '水域',
+            [TerrainType.FLAG]: '龙旗据点',
+            [TerrainType.CITY]: '中立城寨',
+            [TerrainType.BASE]: '主基地',
+            [TerrainType.SMALL_CITY]: '小型城寨',
+            [TerrainType.MIDDLE_CITY]: '中型城寨',
+            [TerrainType.BIG_CITY]: '大型城寨'
         };
         return names[terrainType] || '未知地形';
     }
@@ -431,8 +431,8 @@ class MessageParser {
      * @param {number} terrainType - 地形类型
      * @returns {boolean} 是否可通行
      */
-    static isTerrainWalkable(terrainType) {
-        return ![TERRAIN_TYPES.MOUNT, TERRAIN_TYPES.WATER].includes(terrainType);
+    static isTerrainWalkable(terrainType: TerrainType): boolean {
+        return ![TerrainType.MOUNT, TerrainType.WATER].includes(terrainType);
     }
 
     /**
@@ -443,31 +443,32 @@ class MessageParser {
      * @returns {Array} returns.cities - 城寨位置数组
      * @returns {Array} returns.bases - 基地位置数组
      */
-    static extractSpecialLocations(grid) {
-        const locations = {
-            flags: [],      // 龙旗据点位置坐标数组
-            cities: [],     // 中立城寨位置坐标数组
-            bases: []       // 主基地位置坐标数组
-        };
+    static extractSpecialLocations(grid: MapCell[][]) {
+        const flags: Position[] = [];
+        const cities: Position[] = [];
+        const bases: Position[] = [];
 
         for (let y = 0; y < grid.length; y++) {
             for (let x = 0; x < grid[y].length; x++) {
                 const cell = grid[y][x];
+                const position = { x, y };
                 switch (cell.terrain) {
-                    case TERRAIN_TYPES.FLAG:
-                        locations.flags.push({x, y});
+                    case TerrainType.FLAG:
+                        flags.push(position);
                         break;
-                    case TERRAIN_TYPES.CITY:
-                        locations.cities.push({x, y});
+                    case TerrainType.SMALL_CITY:
+                    case TerrainType.MIDDLE_CITY:
+                    case TerrainType.BIG_CITY:
+                        cities.push(position);
                         break;
-                    case TERRAIN_TYPES.BASE:
-                        locations.bases.push({x, y});
+                    case TerrainType.BASE:
+                        bases.push(position);
                         break;
                 }
             }
         }
 
-        return locations;
+        return { flags, cities, bases };
     }
 
     /**
@@ -475,11 +476,11 @@ class MessageParser {
      * @param {number} formationType - 阵型类型
      * @returns {string} 阵型名称
      */
-    static getFormationName(formationType) {
-        const names = {
-            0: '无阵型',      // 默认状态，无特殊阵型
-            1: '攻击阵型',    // 攻击力加成阵型
-            2: '防守阵型'     // 防御力加成阵型
+    static getFormationName(formationType: number): string {
+        const names: Record<number, string> = {
+            0: '无阵型',
+            1: '鹤翼阵',
+            2: '八卦阵'
         };
         return names[formationType] || '未知阵型';
     }
@@ -489,8 +490,8 @@ class MessageParser {
      * @param {Object} statuses - 状态对象
      * @returns {Object} 解析后的状态信息
      */
-    static parseStatuses(statuses) {
-        const parsedStatuses = {};
+    static parseStatuses(statuses: Record<string, any>): Record<string, any> {
+        const parsedStatuses: Record<string, any> = {};
         for (const [status, rounds] of Object.entries(statuses)) {
             parsedStatuses[status] = {
                 remainingRounds: rounds,                              // 状态剩余持续回合数
@@ -506,13 +507,13 @@ class MessageParser {
      * @param {string} status - 状态英文名
      * @returns {string} 状态中文名
      */
-    static getStatusName(status) {
-        const names = {
-            [HERO_STATUS.NONE]: '正常',         // 无异常状态
-            [HERO_STATUS.RESURRECTION]: '复活中', // 英雄正在复活过程中
-            [HERO_STATUS.SILENCE]: '沉默',      // 无法使用技能
-            [HERO_STATUS.GROUNDED]: '控制',     // 无法移动
-            [HERO_STATUS.WEAKNESS]: '虚弱'      // 攻击力降低
+    static getStatusName(status: string): string {
+        const names: Record<string, string> = {
+            'NONE': '无状态',
+            'RESURRECTION': '复活中',
+            'Silence': '沉默',
+            'Grounded': '禁锢',
+            'WEAKNESS': '虚弱'
         };
         return names[status] || status;
     }
@@ -522,7 +523,7 @@ class MessageParser {
      * @param {Array} roles - 英雄数组
      * @returns {number} 总生命值
      */
-    static calculateTotalLife(roles) {
+    static calculateTotalLife(roles: any[]): number {
         return roles.reduce((total, role) => total + (role.life || 0), 0);
     }
 
@@ -531,7 +532,7 @@ class MessageParser {
      * @param {Array} roles - 英雄数组
      * @returns {number} 存活英雄数量
      */
-    static countAliveHeroes(roles) {
+    static countAliveHeroes(roles: any[]): number {
         return roles.filter(role => role.life > 0 && role.reviveRound === 0).length;
     }
 
@@ -540,7 +541,7 @@ class MessageParser {
      * @param {Array} roles - 英雄数组
      * @returns {number} 总士兵数量
      */
-    static countTotalSoldiers(roles) {
+    static countTotalSoldiers(roles: any[]): number {
         return roles.reduce((total, role) => {
             return total + this.countSoldiers(role.solderProps);
         }, 0);
@@ -551,7 +552,7 @@ class MessageParser {
      * @param {Array} soldiers - 士兵数组
      * @returns {number} 士兵数量
      */
-    static countSoldiers(soldiers) {
+    static countSoldiers(soldiers: any[]): number {
         return soldiers ? soldiers.length : 0;
     }
 
@@ -560,8 +561,8 @@ class MessageParser {
      * @param {number} roleId - 城寨角色ID
      * @returns {string} 城寨类型
      */
-    static getCityType(roleId) {
-        const types = {
+    static getCityType(roleId: number): string {
+        const types: Record<number, string> = {
             50: '小型城寨',    // 血量较少的防御建筑
             51: '中型城寨',    // 中等血量的防御建筑
             52: '大型城寨'     // 高血量的防御建筑
@@ -574,8 +575,8 @@ class MessageParser {
      * @param {number} roleId - 城寨角色ID
      * @returns {number} 最大血量
      */
-    static getCityMaxLife(roleId) {
-        const maxLifeMap = {
+    static getCityMaxLife(roleId: number): number {
+        const maxLifeMap: Record<number, number> = {
             50: 200,  // 小型城寨最大血量
             51: 400,  // 中型城寨最大血量
             52: 600   // 大型城寨最大血量
@@ -589,7 +590,7 @@ class MessageParser {
      * @param {number} currentLife - 当前血量
      * @returns {number} 血量百分比
      */
-    static getCityHealthPercentage(roleId, currentLife) {
+    static getCityHealthPercentage(roleId: number, currentLife: number): number {
         const maxLife = this.getCityMaxLife(roleId);
         return maxLife > 0 ? (currentLife / maxLife) * 100 : 0;
     }
@@ -601,7 +602,7 @@ class MessageParser {
      * @returns {Object} returns.winner - 获胜玩家对象
      * @returns {Array} returns.rankings - 排名后的玩家数组
      */
-    static determineWinner(players) {
+    static determineWinner(players: any[]): any {
         // 根据占点进度排序
         const sortedPlayers = [...players].sort((a, b) => {
             // 首先按占点进度排序
@@ -632,7 +633,7 @@ class MessageParser {
      * @param {Object} playerData - 玩家数据
      * @returns {number} 玩家得分
      */
-    static calculatePlayerScore(playerData) {
+    static calculatePlayerScore(playerData: any): number {
         const progressScore = (playerData.progress || 0) * 1000;      // 占点进度得分（权重最高）
         const occupyScore = (playerData.occupyRound || 0) * 10;       // 占领回合得分
         const killScore = (playerData.killedNum || 0) * 50;           // 击杀数得分
@@ -647,7 +648,7 @@ class MessageParser {
      * @param {Object} heroData - 英雄数据
      * @returns {number} 英雄效率
      */
-    static calculateHeroEfficiency(heroData) {
+    static calculateHeroEfficiency(heroData: any): number {
         const totalSoldiers = (heroData.bowmen || 0) + (heroData.shieldmen || 0);
         const kills = heroData.killedNum || 0;
         
@@ -667,7 +668,7 @@ class MessageParser {
      * @returns {string} returns.competitionLevel - 竞争激烈程度
      * @returns {string} returns.gameQuality - 游戏质量评估
      */
-    static generateGameSummary(players, winner) {
+    static generateGameSummary(players: any[], winner: any): any {
         const totalKills = players.reduce((sum, p) => sum + p.killedNum, 0);
         const totalSoldiers = players.reduce((sum, p) => sum + p.soldierNum, 0);
         const avgProgress = players.reduce((sum, p) => sum + p.progress, 0) / players.length;
@@ -687,7 +688,7 @@ class MessageParser {
      * @param {Array} players - 玩家数组
      * @returns {string} 竞争程度
      */
-    static assessCompetitionLevel(players) {
+    static assessCompetitionLevel(players: any[]): string {
         if (players.length < 2) return '单人游戏';
         
         const scores = players.map(p => p.score);
@@ -706,7 +707,7 @@ class MessageParser {
      * @param {Array} players - 玩家数组
      * @returns {string} 游戏质量
      */
-    static assessGameQuality(players) {
+    static assessGameQuality(players: any[]): string {
         const totalKills = players.reduce((sum, p) => sum + p.killedNum, 0);
         const avgProgress = players.reduce((sum, p) => sum + p.progress, 0) / players.length;
         
@@ -726,6 +727,45 @@ class MessageParser {
 
         const qualities = ['低质量', '普通', '良好', '优秀', '完美'];
         return qualities[Math.min(qualityScore, qualities.length - 1)];
+    }
+
+    /**
+     * 获取城寨信息
+     * @param roleId 城寨角色ID
+     * @returns 城寨基础信息
+     */
+    static getCityInfo(roleId: number) {
+        const cityInfo: Record<number, any> = {
+            50: { // 小型城寨
+                maxLife: 1000,
+                damage: 60,
+                attackRange: 3,
+                reward: 100,
+                typeName: '小型城寨'
+            },
+            51: { // 中型城寨
+                maxLife: 2000,
+                damage: 120,
+                attackRange: 4,
+                reward: 200,
+                typeName: '中型城寨'
+            },
+            52: { // 大型城寨
+                maxLife: 3000,
+                damage: 180,
+                attackRange: 5,
+                reward: 400,
+                typeName: '大型城寨'
+            }
+        };
+        
+        return cityInfo[roleId] || {
+            maxLife: 1000,
+            damage: 60,
+            attackRange: 3,
+            reward: 100,
+            typeName: '未知城寨'
+        };
     }
 }
 

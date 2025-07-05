@@ -21,12 +21,15 @@ export interface GameRound {
 
 /** 地形类型枚举 */
 export enum TerrainType {
-    SPACE = 0,  // 空地
-    MOUNT = 1,  // 山丘
-    WATER = 2,  // 水域
-    FLAG = 3,   // 龙旗据点
-    CITY = 4,   // 中立城寨
-    BASE = 5    // 主基地
+    SPACE = 0,        // 空地 - 可行军的空地
+    MOUNT = 1,        // 山丘 - 山（障碍物）
+    WATER = 2,        // 水域 - 水（障碍物）
+    FLAG = 3,         // 龙旗据点 - 玩家可占领的据点
+    CITY = 4,         // 中立城寨 - 通用城寨标识
+    BASE = 5,         // 主基地 - 玩家出生基地
+    SMALL_CITY = 50,  // 中立城寨（一级）
+    MIDDLE_CITY = 51, // 中立城寨（二级）
+    BIG_CITY = 52     // 中立城寨（三级）
 }
 
 /** 地图网格单元 */
@@ -36,6 +39,8 @@ export interface MapCell {
     terrain: TerrainType;
     terrainName: string;
     walkable: boolean;
+    hasUnit?: boolean;        // 是否有单位占据
+    unitId?: number;          // 占据单位的ID
 }
 
 /** 地图信息 */

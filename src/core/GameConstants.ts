@@ -12,19 +12,61 @@ export const MAP_CONFIG = {
     WIDTH: 80,              // 地图宽度
     HEIGHT: 60,             // 地图高度
     CENTER_X: 40,           // 地图中心X坐标
-    CENTER_Y: 30            // 地图中心Y坐标
+    CENTER_Y: 30,           // 地图中心Y坐标
+    TOTAL_CELLS: 4800       // 总格子数 (80 * 60)
 } as const;
 
 /** 地图元素类型常量 */
 export const TERRAIN_TYPES = {
-    SPACE: 0,               // 空地
-    MOUNT: 1,               // 山丘（障碍物）
-    WATER: 2,               // 水域（障碍物）
-    FLAG: 3,                // 龙旗据点
-    BASE: 5,                // 主基地
+    SPACE: 0,               // 空地 - 可行军的空地
+    MOUNT: 1,               // 山丘 - 山（障碍物）
+    WATER: 2,               // 水域 - 水（障碍物）
+    FLAG: 3,                // 龙旗据点 - 玩家可占领的据点
+    CITY: 4,                // 中立城寨 - 通用城寨标识
+    BASE: 5,                // 主基地 - 玩家出生基地
     SMALL_CITY: 50,         // 中立城寨（一级）
     MIDDLE_CITY: 51,        // 中立城寨（二级）
     BIG_CITY: 52            // 中立城寨（三级）
+} as const;
+
+/** 城寨配置常量 */
+export const CITY_CONFIG = {
+    SMALL_CITY: {
+        ROLE_ID: 50,
+        MAX_LIFE: 1000,
+        DAMAGE: 60,
+        ATTACK_RANGE: 3,
+        REWARD: 100,
+        TYPE_NAME: '小型城寨'
+    },
+    MIDDLE_CITY: {
+        ROLE_ID: 51,
+        MAX_LIFE: 2000,
+        DAMAGE: 120,
+        ATTACK_RANGE: 4,
+        REWARD: 200,
+        TYPE_NAME: '中型城寨'
+    },
+    BIG_CITY: {
+        ROLE_ID: 52,
+        MAX_LIFE: 3000,
+        DAMAGE: 180,
+        ATTACK_RANGE: 5,
+        REWARD: 400,
+        TYPE_NAME: '大型城寨'
+    },
+    RESPAWN_ROUNDS: 100     // 城寨重生回合数
+} as const;
+
+/** 据点配置常量 */
+export const STRONGHOLD_CONFIG = {
+    ROLE_ID: 3,             // 据点角色ID
+    SIZE: 3,                // 据点大小（3x3区域）
+    OPEN_ROUND: 100,        // 开放回合数
+    VICTORY_ROUNDS: 60,     // 胜利所需占领回合数
+    NEUTRAL_CAMP: 2,        // 中立阵营ID
+    RED_CAMP: 0,            // 红方阵营ID
+    BLUE_CAMP: 1            // 蓝方阵营ID
 } as const;
 
 /** 龙旗据点配置 */
