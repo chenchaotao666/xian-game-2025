@@ -10,51 +10,43 @@
 
 export const teamBehaviorTree = `root {
   sequence {
-      /* === 综合战略决策 （发育、团战、抢龙旗） === */
-      action [AnalyzeAndSetStrategy]
+    /* === 综合战略决策 （发育、团战、抢龙旗） === */
+    action [AnalyzeAndSetStrategy]
 
-      selector {
-            /* 武将选择 */
-            sequence {
-                condition [ShouldPickGenerals]
-                action [ExecutePickGenerals]
-            }
-
-            /* === 执行全局操作 === */
-            parallel {
-                /* BUFF选择 */
-                sequence {
-                    condition [CanChooseBuff]
-                    action [ExecuteChooseBuff]
-                }
-                
-                /* 生产士兵 */
-                sequence {
-                    condition [NeedMoreTroops]
-                    action [ExecuteTroopProduction]
-                }
-                
-                /* 阵型调整 */
-                sequence {
-                    condition [ShouldChangeFormation]
-                    action [ExecuteFormationChange]
-                }
-                
-                /* 占领据点 */
-                sequence {
-                    condition [CanCaptureDragonFlag]
-                    action [ExecuteCaptureFlag]
-                }
-                    
-                /* === 执行武将行动 === */
-                parallel {
-                    action [ExecuteWarriorActions]
-                    action [ExecuteLeaderActions] 
-                    action [ExecuteSupportActions]
-                }
-            }
+    /* === 执行全局操作 === */
+    parallel {
+        /* BUFF选择 */
+        sequence {
+            condition [CanChooseBuff]
+            action [ExecuteChooseBuff]
+        }
+        
+        /* 生产士兵 */
+        sequence {
+            condition [NeedMoreTroops]
+            action [ExecuteTroopProduction]
+        }
+        
+        /* 阵型调整 */
+        sequence {
+            condition [ShouldChangeFormation]
+            action [ExecuteFormationChange]
+        }
+        
+        /* 占领据点 */
+        sequence {
+            condition [CanCaptureDragonFlag]
+            action [ExecuteCaptureFlag]
+        }
+            
+        /* === 执行武将行动 === */
+        parallel {
+            action [ExecuteWarriorActions]
+            action [ExecuteLeaderActions] 
+            action [ExecuteSupportActions]
         }
     }
+  }
 }`
 
 export const heroBehaviorTree = `root  /* 紧急逃生 */
