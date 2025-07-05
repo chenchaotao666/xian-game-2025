@@ -114,6 +114,7 @@ function setupClientEventListeners(client: NetworkClient): void {
                 init(client, client.getGameState().playerId);
             } else {
                 handleTurn();
+                client.sendActions(ActionBuilder.buildActions());
             }
         });
     }

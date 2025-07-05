@@ -20,6 +20,12 @@ class ActionBuilder {
     static addAction(action: any) {
         this.actionsToSend.push(action);
     }
+
+    static buildActions() {
+        const actions = this.actionsToSend;
+        this.clearActions();
+        return actions;
+    }
     
     /**
      * 构建普通移动指令
