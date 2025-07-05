@@ -222,7 +222,7 @@ function setEnemyTarget(blackboard: TeamBlackboard, agent: any): void {
   const enemyHeroes = blackboard.getEnemyAliveHeroes();
   
   if (myHeroes.length === 0 || enemyHeroes.length === 0) {
-    agent.log('[策略分析] 无法设置敌方目标：缺少英雄数据');
+    log('[策略分析] 无法设置敌方目标：缺少英雄数据');
     return;
   }
 
@@ -247,7 +247,7 @@ function setEnemyTarget(blackboard: TeamBlackboard, agent: any): void {
   const reachableEnemies = enemyDistances.filter(item => item.avgDistance < 999);
   
   if (reachableEnemies.length === 0) {
-    agent.log('[策略分析] 无可达的敌方目标');
+    log('[策略分析] 无可达的敌方目标');
     return;
   }
 
@@ -265,7 +265,7 @@ function setEnemyTarget(blackboard: TeamBlackboard, agent: any): void {
   // 使用setFocusTarget设置目标
   blackboard.setFocusTarget(targetEnemy.roleId.toString());
   
-  agent.log(`[策略分析] 设置敌方目标: 英雄${targetEnemy.roleId} (血量: ${targetEnemy.life}/${targetEnemy.maxLife}, 距离: ${reachableEnemies[0].avgDistance.toFixed(1)})`);
+  log(`[策略分析] 设置敌方目标: 英雄${targetEnemy.roleId} (血量: ${targetEnemy.life}/${targetEnemy.maxLife}, 距离: ${reachableEnemies[0].avgDistance.toFixed(1)})`);
 }
 
 /**
@@ -276,14 +276,14 @@ function setGatherTarget(blackboard: TeamBlackboard, agent: any): void {
   const enemyHeroes = blackboard.getEnemyAliveHeroes();
   
   if (myHeroes.length === 0) {
-    agent.log('[策略分析] 无法设置集合目标：无存活英雄');
+    log('[策略分析] 无法设置集合目标：无存活英雄');
     return;
   }
 
   // 计算我方英雄的中心位置
   const validHeroes = myHeroes.filter(hero => hero.position);
   if (validHeroes.length === 0) {
-    agent.log('[策略分析] 无法设置集合目标：无有效位置的英雄');
+    log('[策略分析] 无法设置集合目标：无有效位置的英雄');
     return;
   }
 
@@ -328,7 +328,7 @@ function setGatherTarget(blackboard: TeamBlackboard, agent: any): void {
   const gatherTargetId = `gather_${gatherPosition.x}_${gatherPosition.y}`;
   blackboard.setFocusTarget(gatherTargetId);
   
-  agent.log(`[策略分析] 设置集合目标: 位置(${gatherPosition.x}, ${gatherPosition.y})`);
+  log(`[策略分析] 设置集合目标: 位置(${gatherPosition.x}, ${gatherPosition.y})`);
 }
 
 /**
@@ -339,7 +339,7 @@ function setCityTarget(blackboard: TeamBlackboard, agent: any): void {
   const myHeroes = blackboard.getMyAliveHeroes();
   
   if (cities.length === 0 || myHeroes.length === 0) {
-    agent.log('[策略分析] 无法设置城寨目标：缺少城寨或英雄数据');
+    log('[策略分析] 无法设置城寨目标：缺少城寨或英雄数据');
     return;
   }
 
@@ -370,13 +370,13 @@ function setCityTarget(blackboard: TeamBlackboard, agent: any): void {
     .sort((a, b) => b.priority - a.priority)[0];
   
   if (!bestCity) {
-    agent.log('[策略分析] 无可达的城寨目标');
+    log('[策略分析] 无可达的城寨目标');
     return;
   }
 
   blackboard.setFocusTarget(bestCity.city.roleId.toString());
   
-  agent.log(`[策略分析] 设置城寨目标: ${bestCity.city.cityType} (血量: ${bestCity.city.healthPercentage}%, 距离: ${bestCity.avgDistance.toFixed(1)})`);
+  log(`[策略分析] 设置城寨目标: ${bestCity.city.cityType} (血量: ${bestCity.city.healthPercentage}%, 距离: ${bestCity.avgDistance.toFixed(1)})`);
 }
 
 /**
@@ -387,7 +387,7 @@ function setFlagTarget(blackboard: TeamBlackboard, agent: any): void {
   const myHeroes = blackboard.getMyAliveHeroes();
   
   if (!stronghold || !stronghold.position || myHeroes.length === 0) {
-    agent.log('[策略分析] 无法设置龙旗目标：缺少据点或英雄数据');
+    log('[策略分析] 无法设置龙旗目标：缺少据点或英雄数据');
     return;
   }
 
@@ -402,7 +402,7 @@ function setFlagTarget(blackboard: TeamBlackboard, agent: any): void {
   const avgDistance = distances.length > 0 ? distances.reduce((sum, d) => sum + d, 0) / distances.length : 999;
   
   if (avgDistance >= 999) {
-    agent.log('[策略分析] 龙旗位置不可达');
+    log('[策略分析] 龙旗位置不可达');
     return;
   }
 
@@ -410,7 +410,7 @@ function setFlagTarget(blackboard: TeamBlackboard, agent: any): void {
   const flagTargetId = `flag_${stronghold.position.x}_${stronghold.position.y}`;
   blackboard.setFocusTarget(flagTargetId);
   
-  agent.log(`[策略分析] 设置龙旗目标: 位置(${stronghold.position.x}, ${stronghold.position.y}), 距离: ${avgDistance.toFixed(1)}`);
+  log(`[策略分析] 设置龙旗目标: 位置(${stronghold.position.x}, ${stronghold.position.y}), 距离: ${avgDistance.toFixed(1)}`);
 }
 
 /**
@@ -421,10 +421,10 @@ function logCurrentStrategyInfo(blackboard: TeamBlackboard, agent: any): void {
   const focusTargetId = blackboard.getFocusTargetId();
   
   if (currentStrategy) {
-    agent.log(`[策略分析] 当前策略: ${currentStrategy}`);
+    log(`[策略分析] 当前策略: ${currentStrategy}`);
     
     if (focusTargetId) {
-      agent.log(`[策略分析] 目标设置: ${focusTargetId}`);
+      log(`[策略分析] 目标设置: ${focusTargetId}`);
     }
 
     // 输出策略历史信息
